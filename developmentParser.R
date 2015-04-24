@@ -8,23 +8,26 @@
 #####Data Read in ####
 library(stringr)
 #Asks user to specify the QC set barcode, ie the name of the .rpt file
-filename <- readline("Enter the QC set barcode, without the .rpt\t")
-#Ads the .rpt to the end 
-filenamerpt <- paste0(filename, ".rpt", sep="")
-#Makes a write out name that is based off the .rpt name
-outputname <- paste0(filename, ".txt", sep ="")
-#reads in the data from the filenamerpt
-scan(filenamerpt, 
-     what= list(Type="", Value = ""), #Reads into two columns as a list
-     sep = "\t", #determines the two columns by the seperater tab
-     multi.line = TRUE, #does not break 
-     fill=TRUE,
-     comment.char = "{",
-     allowEscapes = FALSE) -> data
-#Binds the list into a dataframe, and doesn't change characters to factors
-data <- data.frame(do.call('cbind', data),
-           stringsAsFactors = FALSE)
+data <- data.frame()
 
+filename <- "y"
+
+while (filename != "n") {
+        filename <- readline("Please enter the QC set Barcode w/ .rpt. If you are done adding reports enter n \t")
+        if (filename == "n") {
+                break
+        }
+        tempdata <- scan(filename, 
+                         what= list(Type="", Value = ""), #Reads into two columns as a list
+                         sep = "\t", #determines the two columns by the seperater tab
+                         multi.line = TRUE, #does not break 
+                         fill=TRUE,
+                         comment.char = "{",
+                         allowEscapes = FALSE)
+        tempdata <- data.frame(do.call('cbind', tempdata),
+                               stringsAsFactors = FALSE)
+        data <- rbind(data, tempdata)      
+}
 #Searches in column Type for the word Well, and returns the value in the column next to it
 #Each of these commands makes a vector with all of the values for each sample.
 data$Value[grep("Well", data$Type)] -> Well #name chosen due to likeness with ESMS import
