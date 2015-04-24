@@ -89,12 +89,29 @@ for (i in 1:length(samplesplit)) {
 
 #The loop does a similar thing but for Area
 Area <- vector()
+FlrArea <- vector()
 for (i in 1:length(samplesplit)) {
         workingdata <- as.data.frame(samplesplit[i])
         colnames(workingdata) <- c("Type", "Value")
-        percentareas <- as.numeric(workingdata$Value[grep("Area %Total", workingdata$Type)])
-        Area <- append(Area, max(percentareas))
+        chromosplit <- split(workingdata, cumsum(workingdata[,"Type"]== "[CHROMATOGRAM]"))
+        if (length(chromosplit) > 2) {
+                FLRlocations <- grep("ACQUITY FLR", chromosplit)
+                for (x in 1:length(FLRlocations)) {
+                        flr <- FLRlocations[x]
+                        workingdata2 <- as.data.frame(chromosplit[flr])
+                        colnames(workingdata2) <- c("Type", "Value")
+                        percentareas2 <- as.numeric(workingdata2$Value[grep("Area %Total", workingdata2$Type)])
+                        FlrArea <- append(FlrArea, max(percentareas2))
+                }
+                workingdata3 <- as.data.frame(chromosplit[2])
+                colnames(workingdata3) <- c("Type", "Value")
+                percentareas3 <- as.numeric(workingdata3$Value[grep("Area %Total", workingdata3$Type)])
+                Area <- append(Area, max(percentareas3))
+        } else {
+                percentareas <- as.numeric(workingdata$Value[grep("Area %Total", workingdata$Type)])
+                Area <- append(Area, max(percentareas)) }
 }
+
 #Generates a Test Type vector, which is just the TestType repeated over and over
 rep_len(x = "MS", length.out = length(f2)) -> TestType_MS
 rep_len(x = "HPLC", length.out = length(f2)) -> TestType_HPLC
