@@ -124,4 +124,4 @@ Outputdata <- data.frame(cbind(Well,
 colnames(Outputdata) <- columnnames
 
 #Writes out the now ESMS replica data to the outputnume
-write.table(Outputdata, outputname, sep = "\t", col.names=TRUE, quote=FALSE)
+write.table(Outputdata, "Parseddata.txt", sep = "\t", col.names=TRUE, quote=FALSE)
