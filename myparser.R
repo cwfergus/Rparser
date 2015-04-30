@@ -177,4 +177,4 @@ colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
 #Writes out the now ESMS replica data to the outputnume
-write.table(likeESMS, "Importdata.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE)
+write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE)
