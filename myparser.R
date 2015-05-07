@@ -7,23 +7,28 @@
 
 #####Data Read in ####
 library(stringr)
-#Asks user to specify the QC set barcode, ie the name of the .rpt file
-filename <- readline("Enter the QC set barcode, without the .rpt\t")
-#Ads the .rpt to the end 
-filenamerpt <- paste0(filename, ".rpt", sep="")
-#Makes a write out name that is based off the .rpt name
-outputname <- paste0(filename, ".txt", sep ="")
-#reads in the data from the filenamerpt
-scan(filenamerpt, 
-     what= list(Type="", Value = ""), #Reads into two columns as a list
-     sep = "\t", #determines the two columns by the seperater tab
-     multi.line = TRUE, #does not break 
-     fill=TRUE,
-     comment.char = "{",
-     allowEscapes = FALSE) -> data
-#Binds the list into a dataframe, and doesn't change characters to factors
-data <- data.frame(do.call('cbind', data),
-           stringsAsFactors = FALSE)
+
+data <- data.frame()
+
+filename <- "y"
+
+while (filename != "n") {
+        filename <- readline("Please enter the QC set Barcode. If you are done adding reports enter n \n")
+        if (filename == "n") {
+                break
+        }
+        filename <- paste("Y:/", filename, ".rpt", sep="")
+        tempdata <- scan(filename, 
+                         what= list(Type="", Value = ""), #Reads into two columns as a list
+                         sep = "\t", #determines the two columns by the seperater tab
+                         multi.line = TRUE, #does not break 
+                         fill=TRUE,
+                         comment.char = "{",
+                         allowEscapes = FALSE)
+        tempdata <- data.frame(do.call('cbind', tempdata),
+                               stringsAsFactors = FALSE)
+        data <- rbind(data, tempdata)      
+}
 
 #Searches in column Type for the word Well, and returns the value in the column next to it
 #Each of these commands makes a vector with all of the values for each sample.
@@ -49,8 +54,11 @@ paste(Row, Col, sep = ":") -> Well
 #Synthesis Batch: found within FM, not possible in R
 
 # SSID found within FM? I can probably do this here if necessary
+
 #Searches for the SampleID row, finds the Production number, makes a vector with all of them
 data$Value[grep("^SampleID$", data$Type)] -> ProdNum
+
+str_extract(ProdNum, "[[:digit:]]+") -> SSID
 
 #Searches for the Date row, makes vector with all the Dates
 data$Value[grep("^Date$", data$Type)] -> Date
@@ -123,6 +131,9 @@ data$Value[grep("SampleDescription", data$Type)] -> SO
 #Customer: in filemaker not in input
 
 #SeqID: in filemaker not in input
+
+
+
 #Finds the Barcode numbers
 data$Value[(grep("JobCode", data$Type))]-> ESBarCode
 
@@ -132,49 +143,64 @@ Results_null <- vector(mode = "character", length = length(Results))
 Area_null <- vector(mode = "character", length = length(Area))
 
 #Make a vector of column names just to make it easy.
-columnnames <- c("f1", "f2", "UserName", "Instrument", "PlateLoc", "Row", "Well", "Col", "ProdNum", "Date", "Time", "ExpectMass", "Results", "Area", "TestType", "SO", "ESBarCode")
+columnnames <- c("Well",
+                 "ProdNum",
+                 "Date",
+                 "Time",
+                 "UserName",
+                 "Instrument",
+                 "Results",
+                 "PlateLoc",
+                 "Row",
+                 "Col",
+                 "SSID",
+                 "ExpectMass",
+                 "TestType",
+                 "SO",
+                 "ESBarCode",
+                 "Area")
 #Bind together the different vectors into a data frame. Here we make the MS Testtype DF
-msESMS <- data.frame(cbind(f1,
-                           f2,
-                           UserName,
-                           Instrument,
-                           PlateLoc,
-                           Row,
-                           Well,
-                           Col,
+msESMS <- data.frame(cbind(Well,
                            ProdNum,
                            Date,
                            Time,
-                           ExpectMass,
+                           UserName,
+                           Instrument,
                            Results,
-                           Area_null,
+                           PlateLoc,
+                           Row,
+                           Col,
+                           SSID,
+                           ExpectMass,
                            TestType_MS,
                            SO,
-                           ESBarCode))
+                           ESBarCode,
+                           Area_null))
 
 #Append the new column names, removing the Area_null name to Area
 colnames(msESMS) <- columnnames
 #Bind together the HPLC test type stuff
-areaESMS <- data.frame(cbind(f1,
-                             f2,
-                             UserName,
-                             Instrument,
-                             PlateLoc,
-                             Row,
-                             Well,
-                             Col,
-                             ProdNum,
-                             Date,
-                             Time,
-                             ExpectMass_null,
-                             Results_null,
-                             Area,
-                             TestType_HPLC,
-                             SO,
-                             ESBarCode))
+areaESMS <- data.frame(cbind(Well,
+                           ProdNum,
+                           Date,
+                           Time,
+                           UserName,
+                           Instrument,
+                           Results_null,
+                           PlateLoc,
+                           Row,
+                           Col,
+                           SSID,
+                           ExpectMass_null,
+                           TestType_HPLC,
+                           SO,
+                           ESBarCode,
+                           Area))
 #Remove the ExpectMass_null, and Results_null
 colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
 #Writes out the now ESMS replica data to the outputnume
-write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE)
+write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
+
+#rm(list=ls())
