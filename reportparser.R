@@ -8,22 +8,58 @@
 #####Data Read in ####
 library(stringr)
 
+mDrive <- vector()
+
+findMapDrv <- function(fnChk) {
+        mD <- paste(LETTERS, ":/", sep="")
+        mmax <- length(mD)
+        for (m in 1:mmax)
+        {
+                dirChk <- paste(mD[m],fnChk,sep="")
+                dChk <- file.exists(dirChk)
+                if(dChk==TRUE){
+                        mDrive <- mD[m]
+                        break 
+                }
+        }
+        return(mDrive)
+}
+
 data <- data.frame()
 
 filename <- "y"
 filenamelist <- "You have successfully parsed the following reports:"
 
 while (filename != "n") {
-        filename <- readline("Please enter the QC set Barcode. If you are done adding reports enter n \n")
-        if (filename == "n") {
+        filename <- readline("Please enter the QC set Barcode. 
+If you are done adding reports enter n\t")
+        filenamerpt <- paste(filename, ".rpt", sep="")
+        
+        mDrive <- findMapDrv(filenamerpt)
+        
+        filenamefull <- paste(mDrive, filenamerpt, sep="")
+        
+        reprocess_filename <- paste(mDrive, filename, "_reprocess.rpt", sep="")
+        
+        if (file.exists(reprocess_filename) == TRUE) {
+                print("A more up-to-date version of this data may be availabe at:")
+                print(reprocess_filename)
+                decision <- readline("Do you want to import this instead? Enter y for yes\t")
+                if (decision == "y") {
+                        filenamefull <- reprocess_filename
+                }
+        }
+        breakname <- paste(mDrive, "n.rpt", sep="")
+        if (filenamefull == breakname) {
                 break
         }
-        filename <- paste("Y:/", filename, ".rpt", sep="")
-        if (file.exists(filename) == TRUE) {
-                if (filename %in% filenamelist == TRUE) {
+        
+        if (file.exists(filenamefull) == TRUE) {
+                
+                if (filenamefull %in% filenamelist == TRUE) {
                         print("You have already parsed this report")
                 } else {
-                        tempdata <- scan(filename, 
+                        tempdata <- scan(filenamefull, 
                                          what= list(Type="", Value = ""), #Reads into two columns as a list
                                          sep = "\t", #determines the two columns by the seperater tab
                                          multi.line = TRUE, #does not break 
@@ -33,13 +69,16 @@ while (filename != "n") {
                         tempdata <- data.frame(do.call('cbind', tempdata),
                                                stringsAsFactors = FALSE)
                         data <- rbind(data, tempdata) 
-                        filenamelist <- append(filenamelist, filename)
+                        filenamelist <- append(filenamelist, filenamefull)
                 }
+        
         } else {
                 print("No file exists with the following name!")
-                print(filename)
+                print(filenamefull)
         }
 }
+
+##### Parser ####
 
 #Searches in column Type for the word Well, and returns the value in the column next to it
 #Each of these commands makes a vector with all of the values for each sample.
@@ -148,6 +187,8 @@ data$Value[grep("SampleDescription", data$Type)] -> SO
 #Finds the Barcode numbers
 data$Value[(grep("JobCode", data$Type))]-> ESBarCode
 
+##### Output file generation ####
+
 #Makes vectors with empty fields for each of the two TestType splits
 ExpectMass_null <- vector(mode = "character", length = length(ExpectMass))
 Results_null <- vector(mode = "character", length = length(Results))
@@ -215,4 +256,6 @@ rbind(msESMS, areaESMS) -> likeESMS
 write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
 print(filenamelist)
 print("Don't forget to now import into Filemaker")
-#rm(list=ls())
+rm(list=ls())
+
+
