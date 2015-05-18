@@ -7,56 +7,43 @@
 
 #####Data Read in ####
 library(stringr)
-
-mDrive <- vector()
-
-findMapDrv <- function(fnChk) {
-        mD <- paste(LETTERS, ":/", sep="")
-        mmax <- length(mD)
-        for (m in 1:mmax)
-        {
-                dirChk <- paste(mD[m],fnChk,sep="")
-                dChk <- file.exists(dirChk)
-                if(dChk==TRUE){
-                        mDrive <- mD[m]
-                        break 
-                }
-        }
-        return(mDrive)
-}
+library(calibrate)
 
 data <- data.frame()
 
 filename <- "y"
-filenamelist <- "You have successfully parsed the following reports:"
+fn_list <- "You have successfully parsed the following reports:"
+fn_full_list <- vector()
 
 while (filename != "n") {
         filename <- readline("Please enter the QC set Barcode. 
-If you are done adding reports enter n\t")
+                             If you are done adding reports enter n\t")
         filenamerpt <- paste(filename, ".rpt", sep="")
+        filenamereprocess <- paste(filename, "_reprocess.rpt", sep="")
         
-        mDrive <- findMapDrv(filenamerpt)
+        data_path <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
         
-        filenamefull <- paste(mDrive, filenamerpt, sep="")
+        filenamefull <- paste(data_path, filenamerpt, sep="")
         
-        reprocess_filename <- paste(mDrive, filename, "_reprocess.rpt", sep="")
+        reprocess_filename <- paste(data_path, filename, "_reprocess.rpt", sep="")
         
         if (file.exists(reprocess_filename) == TRUE) {
                 print("A more up-to-date version of this data may be availabe at:")
-                print(reprocess_filename)
+                print(filenamereprocess)
                 decision <- readline("Do you want to import this instead? Enter y for yes\t")
                 if (decision == "y") {
                         filenamefull <- reprocess_filename
+                        filenamerpt <- filenamereprocess
                 }
         }
-        breakname <- paste(mDrive, "n.rpt", sep="")
+        breakname <- paste(data_path, "n.rpt", sep="")
         if (filenamefull == breakname) {
                 break
         }
         
         if (file.exists(filenamefull) == TRUE) {
                 
-                if (filenamefull %in% filenamelist == TRUE) {
+                if (filenamefull %in% fn_full_list == TRUE) {
                         print("You have already parsed this report")
                 } else {
                         tempdata <- scan(filenamefull, 
@@ -69,9 +56,10 @@ If you are done adding reports enter n\t")
                         tempdata <- data.frame(do.call('cbind', tempdata),
                                                stringsAsFactors = FALSE)
                         data <- rbind(data, tempdata) 
-                        filenamelist <- append(filenamelist, filenamefull)
+                        fn_full_list <- append(fn_full_list, filenamefull)
+                        fn_list <- append(fn_list, filenamerpt)
                 }
-        
+                
         } else {
                 print("No file exists with the following name!")
                 print(filenamefull)
@@ -161,13 +149,19 @@ for (i in 1:length(samplesplit)) {
                         percentareas2 <- as.numeric(workingdata2$Value[grep("Area %Total", workingdata2$Type)])
                         FlrArea <- append(FlrArea, max(percentareas2))
                 }
+                if (length(chromosplit) == 1) {
+                        Area <- append(Area, 0)
+                }
                 workingdata3 <- as.data.frame(chromosplit[2])
                 colnames(workingdata3) <- c("Type", "Value")
                 percentareas3 <- as.numeric(workingdata3$Value[grep("Area %Total", workingdata3$Type)])
                 Area <- append(Area, max(percentareas3))
         } else {
-                percentareas <- as.numeric(workingdata$Value[grep("Area %Total", workingdata$Type)])
-                Area <- append(Area, max(percentareas)) }
+                if (length(chromosplit) == 1) {
+                        Area <- append(Area, 0)
+                } else{
+                        percentareas <- as.numeric(workingdata$Value[grep("Area %Total", workingdata$Type)])
+                        Area <- append(Area, max(percentareas)) }}
 }
 
 #Generates a Test Type vector, which is just the TestType repeated over and over
@@ -233,29 +227,28 @@ msESMS <- data.frame(cbind(Well,
 colnames(msESMS) <- columnnames
 #Bind together the HPLC test type stuff
 areaESMS <- data.frame(cbind(Well,
-                           ProdNum,
-                           Date,
-                           Time,
-                           UserName,
-                           Instrument,
-                           Results_null,
-                           PlateLoc,
-                           Row,
-                           Col,
-                           SSID,
-                           ExpectMass_null,
-                           TestType_HPLC,
-                           SO,
-                           ESBarCode,
-                           Area))
+                             ProdNum,
+                             Date,
+                             Time,
+                             UserName,
+                             Instrument,
+                             Results_null,
+                             PlateLoc,
+                             Row,
+                             Col,
+                             SSID,
+                             ExpectMass_null,
+                             TestType_HPLC,
+                             SO,
+                             ESBarCode,
+                             Area))
 #Remove the ExpectMass_null, and Results_null
 colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
 #Writes out the now ESMS replica data to the outputnume
 write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
-print(filenamelist)
+print(fn_list)
 print("Don't forget to now import into Filemaker")
+
 rm(list=ls())
-
-
