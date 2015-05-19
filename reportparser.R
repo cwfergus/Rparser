@@ -6,27 +6,41 @@
 # It then writes out a tab delimited text file
 
 #####Data Read in ####
-library(stringr)
-library(calibrate)
 
+# Install/load required R libraries
+if (!require(stringr)){
+        install.packages("stringr")
+        library(stringr)
+} else library(stringr)
+if (!require(dplyr)){
+        install.packages("dplyr")
+        library(dplyr)
+} else library(dplyr)
+
+# Initialize some vectors and data frames for use later
 data <- data.frame()
 
 filename <- "y"
 fn_list <- "You have successfully parsed the following reports:"
 fn_full_list <- vector()
 
+#This loop allows read in of multiple report files. It assumes the computer has 
+#a connection to DATA4///current_report_files
+#It also checks if an _reprocess exists, or if you have entered a barcode twice
+
 while (filename != "n") {
+        #Ask for Barcode, append .rpt and _reprocess.rpt
         filename <- readline("Please enter the QC set Barcode. 
                              If you are done adding reports enter n\t")
         filenamerpt <- paste(filename, ".rpt", sep="")
         filenamereprocess <- paste(filename, "_reprocess.rpt", sep="")
-        
+        #Set Data Path
         data_path <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
-        
+        #Paste Data Path to filenames
         filenamefull <- paste(data_path, filenamerpt, sep="")
-        
         reprocess_filename <- paste(data_path, filename, "_reprocess.rpt", sep="")
         
+        #Check if a reprocess exists and prompt user if they want to parse that instead
         if (file.exists(reprocess_filename) == TRUE) {
                 print("A more up-to-date version of this data may be availabe at:")
                 print(filenamereprocess)
@@ -36,16 +50,19 @@ while (filename != "n") {
                         filenamerpt <- filenamereprocess
                 }
         }
+        #Check if the user entered n, and end the read in loop
         breakname <- paste(data_path, "n.rpt", sep="")
         if (filenamefull == breakname) {
                 break
         }
-        
+        #check if the data exists
         if (file.exists(filenamefull) == TRUE) {
-                
+                # Check if the user has already imported the data, if not read it in.
                 if (filenamefull %in% fn_full_list == TRUE) {
                         print("You have already parsed this report")
                 } else {
+                        #This read in is sub-optimal, but the best I can find
+                        #reads in data as a two unit list
                         tempdata <- scan(filenamefull, 
                                          what= list(Type="", Value = ""), #Reads into two columns as a list
                                          sep = "\t", #determines the two columns by the seperater tab
@@ -53,76 +70,68 @@ while (filename != "n") {
                                          fill=TRUE,
                                          comment.char = "{",
                                          allowEscapes = FALSE)
+                        #Converts the list to a data.frame
                         tempdata <- data.frame(do.call('cbind', tempdata),
                                                stringsAsFactors = FALSE)
+                        #Append the tempdata to the growing data chain
                         data <- rbind(data, tempdata) 
+                        #Add the filenames to check for repeat list
                         fn_full_list <- append(fn_full_list, filenamefull)
+                        #Add Barcode.rpt to the print out list
                         fn_list <- append(fn_list, filenamerpt)
                 }
                 
-        } else {
+        } else { #if the data doesn't exist, print out the full path. If path is wrong
+                #User can now tell.
                 print("No file exists with the following name!")
                 print(filenamefull)
         }
 }
 
 ##### Parser ####
+# The Parser uses grep commands to look for certain words/Reg Exp. Then it takes a value
+# in either the row over or somewhere else related to the word.
 
-#Searches in column Type for the word Well, and returns the value in the column next to it
-#Each of these commands makes a vector with all of the values for each sample.
-data$Value[grep("Well", data$Type)] -> f2 #name chosen due to likeness with ESMS import
-# Repeat the word well, for the number of samples, as determined by the pevious find
-rep_len(x = "Well", length.out = length(f2)) -> f1
 
-#Find the UserName row, take the info in the Value Column
+
+data$Value[grep("Well", data$Type)] -> f2 
 data$Value[grep("UserName", data$Type)] -> UserName
-#Find the Instrument row. The search uses a Regular expression for find the word Instrument,
-#with nothing before it, and nothing after it.
 data$Value[grep("^Instrument$", data$Type)] -> Instrument
-#Str_extract extracts the first digit in the well location, which is actuall the Plate location
+data$Value[grep("^SampleID$", data$Type)] -> ProdNum
+data$Type[grep("Formula", data$Type)+1] -> ExpectMass
+data$Value[grep("SampleDescription", data$Type)] -> SO
+data$Value[(grep("JobCode", data$Type))]-> ESBarCode
+#Takes f2, which is the location of the sample like 16:4,F, and extracts the
+#different parts of this.
 str_extract(f2, "[[:digit:]]+") -> PlateLoc
-#Extract just the row, which is the first letter after a comma. Then remove the comma
 str_extract(str_extract(f2, "[,]{1}[[:alpha:]]"), "[[:alpha:]]+") -> Row
-#Extract just the column, which is the first number before the comma, then remove the comma
 str_extract(str_extract(f2, "[[:digit:]]+[,]"), "[[:digit:]]+") -> Col
-#Put the row and column together seperated by a : to represent the Well, w/o the plate location
+#Put the row and col together like Filemaker wants it.
 paste(Row, Col, sep = ":") -> Well
 
-
-#Synthesis Batch: found within FM, not possible in R
-
-# SSID found within FM? I can probably do this here if necessary
-
-#Searches for the SampleID row, finds the Production number, makes a vector with all of them
-data$Value[grep("^SampleID$", data$Type)] -> ProdNum
-
+#Remove the -01 etc from the ProdNum to get the SSID
 str_extract(ProdNum, "[[:digit:]]+") -> SSID
 
-#Searches for the Date row, makes vector with all the Dates
-data$Value[grep("^Date$", data$Type)] -> Date
-#Converts Dates to the actual R class for dates
-as.Date(Date, format="%d-%b-%Y") -> Date
-#Converts it out of this R format to the Filemaker format
-format(Date, format = "%m/%d/%Y") -> Date
+#Finds the date, converts to date class, then converts back to character string
+# in the format that filemaker wants
+Date <- data$Value[grep("^Date$", data$Type)] %>%
+        as.Date(format="%d-%b-%Y") %>%
+        format(format = "%m/%d/%Y")
 
-#Searches for the Time row, makes vector of times
-data$Value[grep("^Time$", data$Type)] -> Time
-#Removes Times that arn't actuall the time stamp, by selecting only those with :
-grep(":", Time, value=TRUE) -> Time
-#Converts to R type format then back into Filemaker format
-format(strptime(Time, format = "%X"), format = "%r") -> Time
+#Find Time values with a :, then converts to Date/Time format, then back to 
+# character string in Time format FM wants.
+Time <- grep(":", data$Value[grep("^Time$", data$Type)], value=TRUE) %>%
+        strptime(format="%X") %>%
+        format(format="%r")
 
-#Searches for the Expected mass, by finding the Word Formulat, then moving down 1 row
-data$Type[grep("Formula", data$Type)+1] -> ExpectMass
-
-#Splits the Data into sample groups, using the string [SAMPLE]. This creates a 
-#list of data frames, each item being a seperate sample
+# Splits data by SAMPLE, enabling looking at each sample for each value.
 samplesplit <- split(data, cumsum(data[,"Type"] == "[SAMPLE]"))
-#Initiate an empty Results Vector
-Results <- vector()
+
 #The loop looks within each Sample (now sperated in a list), and finds the BPM row
 #IT then collects the value next to it. If there is no value found, it makes it a 0
 #Then it generates a vector of Found masses
+# If it can't find a mass, then it puts 0 into its place. This solves dead wells.
+Results <- vector()
 for (i in 1:length(samplesplit)) {
         workingdata <- as.data.frame(samplesplit[i])
         colnames(workingdata) <- c("Type", "Value")
@@ -133,7 +142,11 @@ for (i in 1:length(samplesplit)) {
         Results <- append(Results, Foundmass)
 }
 
-#The loop does a similar thing but for Area
+#The loop does a similar thing but for Area. It also looks for FLR data being
+#available. If FLR data exists, it splits up the sample data into chromatogram
+#split data. Then it finds the Area values for both FLR and UV. 
+#If the length of the split is 1 then no area values exists, and it appends 0 for the
+#sample.
 Area <- vector()
 FlrArea <- vector()
 for (i in 1:length(samplesplit)) {
@@ -169,19 +182,9 @@ rep_len(x = "MS", length.out = length(f2)) -> TestType_MS
 rep_len(x = "HPLC", length.out = length(f2)) -> TestType_HPLC
 
 
-#Finds the SO numbers
-data$Value[grep("SampleDescription", data$Type)] -> SO
-
-#Customer: in filemaker not in input
-
-#SeqID: in filemaker not in input
-
-
-
-#Finds the Barcode numbers
-data$Value[(grep("JobCode", data$Type))]-> ESBarCode
 
 ##### Output file generation ####
+#Now with all the data generated we have to put it together in the format that FM wants
 
 #Makes vectors with empty fields for each of the two TestType splits
 ExpectMass_null <- vector(mode = "character", length = length(ExpectMass))
@@ -205,7 +208,7 @@ columnnames <- c("Well",
                  "SO",
                  "ESBarCode",
                  "Area")
-#Bind together the different vectors into a data frame. Here we make the MS Testtype DF
+#Bind together the different vectors into a data frame.
 msESMS <- data.frame(cbind(Well,
                            ProdNum,
                            Date,
@@ -223,9 +226,6 @@ msESMS <- data.frame(cbind(Well,
                            ESBarCode,
                            Area_null))
 
-#Append the new column names, removing the Area_null name to Area
-colnames(msESMS) <- columnnames
-#Bind together the HPLC test type stuff
 areaESMS <- data.frame(cbind(Well,
                              ProdNum,
                              Date,
@@ -242,13 +242,16 @@ areaESMS <- data.frame(cbind(Well,
                              SO,
                              ESBarCode,
                              Area))
-#Remove the ExpectMass_null, and Results_null
+
+#Append the new column names, removing the Area_null name to Area
+colnames(msESMS) <- columnnames
 colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
 #Writes out the now ESMS replica data to the outputnume
 write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
+# print out the list of barcodes parsed and imported
 print(fn_list)
 print("Don't forget to now import into Filemaker")
-
+#remove variables.
 rm(list=ls())
