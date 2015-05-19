@@ -7,7 +7,7 @@
 
 #####Data Read in ####
 library(stringr)
-library(calibrate)
+library(MALDIquant)
 
 data <- data.frame()
 
@@ -270,15 +270,22 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,fb,gr_t,labels,l_color="black")
         # fb = file base name; gr_t = mz or lc plot type; labels includes titles, axis labels, and other specs
         fn <- paste("imgs/",fb,"_",gr_t,".png",sep="")                 # filename
         png(filename=fn, width=1400, height=500)	# Open a device: bmp & pdf are other options here
-        plot(x, y, 
-             sub=labels[2], type="n", axes=TRUE 
-        )
-        if(pt_b) textxy(x_txt, y_txt, l_txt, cex=1, offset=-0.8)
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        if(pt_b) {
+                peaks <- createMassPeaks(x, y)
+                plot(peaks, col="red")
+                labelPeaks(peaks, index=intensity(peaks)>25, adj=2, arrowLength=0.25, arrowLwd=1, arrowCol="blue")
+                
+        } else {
+                plot(x, y, sub=labels[2], type="n", axes=TRUE) 
+                textxy(x_txt, y_txt, l_txt, cex=1, offset=-0.8)
+                lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        }
+               
         
-        #text(max(x),max(y), labels[3], pos=2)
-        #text(max(x),0.96*max(y), labels[4], pos=2)
-        #text(max(x),0.92*max(y), labels[5], pos=2)
+        
+        text(max(x),max(y), labels[3], pos=2)
+        text(max(x),0.96*max(y), labels[4], pos=2)
+        text(max(x),0.92*max(y), labels[5], pos=2)
         dev.off()
         # Close the image device that was opened above; the actions in the meantime have been recorded
         return(fn)
