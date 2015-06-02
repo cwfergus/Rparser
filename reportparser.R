@@ -329,6 +329,8 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
 curvecolor <- function(ploc, tdf, df, range) {
         
         
+        
+        
         shd_bl <- grep(df[ploc+4, 2], tdf[,1], fixed=TRUE)
         shd_el <- grep(df[ploc+5,1], tdf[,1], fixed=TRUE)
         if (length(shd_bl) == 0) {
@@ -364,6 +366,25 @@ curvecolor <- function(ploc, tdf, df, range) {
 
                 
 }
+
+peak_table <- function(df) {
+        peak_loc <- grep("[PEAK]", df[,1], fixed=TRUE)
+        areatable <- data.frame()
+        for (l in 1:length(peak_loc)) {
+                pl <- peak_loc[l]
+                rt <- type.convert(df[peak_loc[l]+3,2])
+                area <- type.convert(df[peak_loc[l]+11,2])
+                peak_id <- df[peak_loc[l]+1,2]
+                peak_s_time <- df[peak_loc[l]+4,2]
+                peak_e_time <- df[peak_loc[l]+5,1]
+                peak_width <- df[peak_loc[l]+12,2]
+                table <- cbind(pl, peak_id, rt, area, peak_s_time, peak_e_time, peak_width)
+                areatable <- rbind(areatable, table)
+                
+        }
+        return(areatable)
+}
+
 
 #####Graphing Parser####
 
@@ -424,15 +445,7 @@ for (i in 1:imax)
                         y_lci_LC_au <- (y_lci_LC/100)*lc_range
                         #Generate labels for HPLC data
                         lc_data <- txti[g_lci[1]:(g_lci[2]-1),]
-                        lc_peak_loc <- grep("[PEAK]", lc_data[,1], fixed=TRUE)
-                        lc_areatable <- data.frame()
-                        for (lc in 1:length(lc_peak_loc)) {
-                                lc_pl <- lc_peak_loc[lc]
-                                lc_rt <- type.convert(lc_data[lc_peak_loc[lc]+3,2])
-                                lc_area <- type.convert(lc_data[lc_peak_loc[lc]+11,2])
-                                lc_table <- cbind(lc_rt, lc_area, lc_pl)
-                                lc_areatable <- rbind(lc_areatable, lc_table)
-                        }
+                        lc_areatable <- peak_table(lc_data)
                         peak_lc <- lc_areatable[which(lc_areatable$lc_area==max(lc_areatable$lc_area)),]
                         x_peak_lc <- peak_lc$lc_rt
                         y_peak_lc <- peak_lc$lc_area
@@ -451,15 +464,7 @@ for (i in 1:imax)
                         y_lci_flr_au <- (y_lci_flr/100)*flr_range
                         #Generate labels for FLR data
                         flr_data <- txti[g_lci[2]:max(g_spi),]
-                        flr_peak_loc <- grep("[PEAK]", flr_data[,1], fixed=TRUE)
-                        flr_areatable <- data.frame()
-                        for (flr in 1:length(flr_peak_loc)) {
-                                flr_pl <- flr_peak_loc[flr]
-                                flr_rt <- type.convert(flr_data[flr_peak_loc[flr]+3,2])
-                                flr_area <- type.convert(flr_data[flr_peak_loc[flr]+11,2])
-                                flr_table <- cbind(flr_rt, flr_area, flr_pl)
-                                flr_areatable <- rbind(flr_areatable, flr_table)
-                        }
+                        flr_areatable <- peak_table(flr_data)
                         peak_flr <- flr_areatable[which(flr_areatable$flr_area==max(flr_areatable$flr_area)),]
                         x_peak_flr <- peak_flr$flr_rt
                         y_peak_flr <- peak_flr$flr_area
@@ -484,15 +489,7 @@ for (i in 1:imax)
                 y_lci_au <- (y_lci/100)*lc_range
                 # every other point is y; make it numeric
                 # calculate text labels for LC
-                peak_loc <- grep("[PEAK]", txti[,1], fixed=TRUE)
-                areatable <- data.frame()
-                for (l in 1:length(peak_loc)) {
-                        pl <- peak_loc[l]
-                        rt <- type.convert(txti[peak_loc[l]+3,2])
-                        area <- type.convert(txti[peak_loc[l]+11,2])
-                        table <- cbind(rt, area, pl)
-                        areatable <- rbind(areatable, table)
-                }
+                areatable <- peak_table(txti)
                 peak <- areatable[which(areatable$area==max(areatable$area)),]
                 x_peak <- peak$rt
                 y_peak <- peak$area
