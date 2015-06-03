@@ -23,6 +23,8 @@ if (!require(plotrix)){
         library(plotrix)
 } else library(plotrix)
 
+#test this!
+
 
 # Initialize some vectors and data frames for use later
 data <- data.frame()
