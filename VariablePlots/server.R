@@ -60,7 +60,7 @@ shinyServer(function(input, output, session){
                          file.copy(from = flist, to = input$dlpath)
                          })
         })
-##### Image Generater ####
+        ##### Image Generater ####
         observe({
                 filename_reactive <- eventReactive(input$goButton, {
                         input$QCB
@@ -242,10 +242,10 @@ shinyServer(function(input, output, session){
                                 write.table(likeESMS, file, sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
                         })
                 
-                
-                
+        })         
+        
   #####Select Images####              
-        })
+
         output$ui <- renderUI({
                 fpath <- paste(data_path, input$SO, "/", sep="")
                 flist <- list.files(fpath, pattern="*.png")
