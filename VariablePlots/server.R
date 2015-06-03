@@ -4,13 +4,22 @@ data_path <- "//DATA4/Mass Spec DataRrepository/imgs/"
 data_path_rpt <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
 lc_end <- "_lc.png"
 mz_end <- "_mz.png"
+fl_end <- "_fl.png"
 mailControl=list(smtpServer="EXCHANGE2.bti.biosearchtech.com")
 data <- data.frame()
 
 shinyServer(function(input, output, session){
+        ##### All Images Tabs #####
         observe({
-                if(is.null(input$newimages) || input$newimages==0) return(NULL)
-                isolate({fpath <- paste(data_path, input$SO, "/", sep="")
+                
+                if (input$browse == 0) return()
+
+                        updateTextInput(session, "dlpath",  value = choose.dir(default = "C:/Users/", caption="Select Save Location"))
+                
+        })
+        observe({
+                if(input$SO2=="") return(NULL)
+                isolate({fpath <- paste(data_path, input$SO2, "/", sep="")
                          flist <- list.files(fpath, pattern="*.png")
                          sslist <- unique(str_sub(flist, end=-8))
                          output$plots <- renderUI({
@@ -26,7 +35,7 @@ shinyServer(function(input, output, session){
                                          my_i <- i
                                          plotname <- flist[my_i]
                                          output[[plotname]] <- renderImage({
-                                                 fn <- paste(data_path, input$SO, "/", plotname, sep="")
+                                                 fn <- paste(data_path, input$SO2, "/", plotname, sep="")
                                                  list(src = fn,
                                                       contentType = 'image/png',
                                                       width = 680,
@@ -37,13 +46,21 @@ shinyServer(function(input, output, session){
                          
                          })})
         observe({
-                if(is.null(input$refresh) || input$refresh==0) return(NULL)
+                if(is.null(input$refresh2) || input$refresh2==0) return(NULL)
                 SO_choices2 <- list.dirs(data_path, full.names = FALSE )
-                updateSelectizeInput(session, "SO", "Choose SO Number", 
+                updateSelectizeInput(session, "SO2", "Choose SO Number", 
                                      choices = c(Refreshed="", SO_choices2))
                 
         }, priority=1)
         
+        observe({
+                if(is.null(input$downloadplots) || input$downloadplots==0) return(NULL)
+                isolate({fpath <- fpath <- paste(data_path, input$SO2, "/", sep="")
+                         flist <- list.files(fpath, pattern="*.png", full.names=TRUE)
+                         file.copy(from = flist, to = input$dlpath)
+                         })
+        })
+##### Image Generater ####
         observe({
                 filename_reactive <- eventReactive(input$goButton, {
                         input$QCB
@@ -151,7 +168,6 @@ shinyServer(function(input, output, session){
                 
                 
                 
-                ##### Output file generation ####
                 #Now with all the data generated we have to put it together in the format that FM wants
                 
                 #Makes vectors with empty fields for each of the two TestType splits
@@ -228,7 +244,91 @@ shinyServer(function(input, output, session){
                 
                 
                 
+  #####Select Images####              
+        })
+        output$ui <- renderUI({
+                fpath <- paste(data_path, input$SO, "/", sep="")
+                flist <- list.files(fpath, pattern="*.png")
+                sslist <- unique(str_sub(flist, end=-8))
+                selectInput(
+                        inputId = "SS", 
+                        label = "Choose SS Number",
+                        c(Choose ="", sslist),
+                        selectize=TRUE)
+        })
+        
+        
+        
+        output$mztrace <- renderImage({
+                fn <- paste(data_path, input$SO,"/", input$SS, mz_end, sep="")
+                list(src = fn,
+                     contentType = 'image/png',
+                     width = 680,
+                     height = 440,
+                     alt = "MZ Trace not available")
+        }, deleteFile=FALSE)
+        output$mztrace2 <- renderImage({
+                fn <- paste(data_path, input$SO,"/", input$SS, mz_end, sep="")
+                list(src = fn,
+                     contentType = 'image/png',
+                     width = 680,
+                     height = 440,
+                     alt = "Choose an SO and SS to begin")
+        }, deleteFile=FALSE)
+        output$lctrace <- renderImage({ 
+                fn <- paste(data_path, input$SO, "/", input$SS, lc_end, sep="")
+                list(src = fn,
+                     contentType = 'image/png',
+                     width = 680,
+                     height = 440,
+                     alt = "LC trace not available")
+        }, deleteFile=FALSE)
+        output$lctrace2 <- renderImage({ 
+                fn <- paste(data_path, input$SO, "/", input$SS, lc_end, sep="")
+                list(src = fn,
+                     contentType = 'image/png',
+                     width = 680,
+                     height = 440,
+                     alt = "LC trace not available")
+        }, deleteFile=FALSE)
+        output$fltrace <- renderImage({
+                fn <- paste(data_path, input$SO, "/", input$SS, fl_end, sep="")
+                list(src = fn,
+                     contentType = 'image/png',
+                     width = 680,
+                     height = 440,
+                     alt = "FLR trace not available")
+        }, deleteFile=FALSE)
+        
+        observe({
+                if(is.null(input$send) || input$send==0) return(NULL)
+                from <- "qcdatacheck@biosearchtech.com"
+                to <- isolate(input$to)
+                subject <- isolate(input$subject)
+                msg <- isolate(input$message)
+                MZattachment_Path <- isolate(paste(data_path, input$SO,"/", input$SS, mz_end, sep=""))
+                MZattachment_Name <- isolate(paste("SO: ",input$SO," ", input$SS, mz_end, sep=""))
+                MZattachment <- mime_part(x=MZattachment_Path, name=MZattachment_Name)
+                LCattachment_Path <- isolate(paste(data_path, input$SO, "/", input$SS, lc_end, sep=""))
+                LCattachment_Name <- isolate(paste("SO: ",input$SO, "/", input$SS, lc_end, sep=""))
+                LCattachment <- mime_part(x=LCattachment_Path, name=LCattachment_Name)
+                if (MZattachment_Path == "//DATA4/Mass Spec DataRrepository/imgs//_mz.png" |
+                            LCattachment_Path == "//DATA4/Mass Spec DataRrepository/imgs//_lc.png"){
+                        body <- msg
+                } else {body <- list(msg, MZattachment, LCattachment)}
                 
+                sendmail(from, to, subject, body, control=mailControl)
+        })
+        observe({
+                if(is.null(input$refresh) || input$refresh==0) return(NULL)
+                SO_choices2 <- list.dirs(data_path, full.names = FALSE )
+                updateSelectizeInput(session, "SO", "Choose SO Number", 
+                                     choices = c(Refreshed="", SO_choices2))
+                
+        })
+        
+        session$onSessionEnded(function(){
+                stopApp()
         })
         
         })
