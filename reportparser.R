@@ -18,6 +18,10 @@ if (!require(calibrate)){
         install.packages("calibrate")
         library(calibrate)
 } else library(calibrate)
+if (!require(plotrix)){
+        install.packages("plotrix")
+        library(plotrix)
+} else library(plotrix)
 
 
 # Initialize some vectors and data frames for use later
@@ -277,12 +281,30 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         
           "//Data/it/DBMS/Integrations/ERPDev/imgs/lcms/" -> md
           dev_fn <- paste(md, fb, "_", gr_t, ".png", sep="")
-          png(filename=dev_fn, width=1400, height=500)        # Open a device: bmp & pdf are other options here
-        plot(x, y, 
+          png(filename=dev_fn, width=1400, height=500) # Open a device: bmp & pdf are other options here
+        if (pt_b) {ylim <- c(0,105)} else {ylim <- range(y)}
+          
+          plot(x, y, 
              main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
-             col.lab="blue", col.axis="blue"
+             col.lab="blue", col.axis="blue", ylim = ylim
         )
-        if(pt_b) textxy(x_txt, y_txt, l_txt, cex = 1, offset=-0.8)
+        if (pt_b) {
+                if (length(l_txt)>=10) {
+                        min <- 0.5*max(y_txt)
+                        y_min <- which(y_txt>min)
+                        x_txt <- x_txt[y_min]
+                        y_txt <- y_txt[y_min]
+                        l_txt <- l_txt[y_min]
+                        points(x_txt, y_txt, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
+                        legend("right", l_txt, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
+                } else {
+                        if (length(l_txt)==2){
+                                x_txt <- append(0, x_txt)
+                                y_txt <- append(0, y_txt)
+                                l_txt <- append("", l_txt)
+                        }
+                        thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)} 
+        }
         if(pt_c) {
                 textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
                 polygon(shd, density=NA, col="green", border="black")
@@ -306,8 +328,25 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
              main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
              col.lab="blue", col.axis="blue"
         )
-        if(pt_b) {textxy(x_txt, y_txt, l_txt, cex = 1, offset=-0.8)
-                  text(max(x),max(y), labels[3], pos=2)
+        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        if (pt_b) {
+                if (length(l_txt)>=10) {
+                        min <- 0.5*max(y_txt)
+                        y_min <- which(y_txt>min)
+                        x_txt <- x_txt[y_min]
+                        y_txt <- y_txt[y_min]
+                        l_txt <- l_txt[y_min]
+                        points(x_txt, y_txt, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
+                        legend("right", l_txt, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
+                } else {
+                        if (length(l_txt)==2){
+                                x_txt <- append(0, x_txt)
+                                y_txt <- append(0, y_txt)
+                                l_txt <- append("", l_txt)
+                        }
+                        thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)} 
+        }
+        if(pt_b) {text(max(x),max(y), labels[3], pos=2)
                   mtext(labels[4], side=3, line=1, adj=1)
                   mtext(labels[5], side=3, line=0, adj=1)
         }
@@ -318,7 +357,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 mtext(labels[3], side=3, line=1, adj=1)
                 mtext(labels[4], side=3, line=0, adj=1)
         }
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        
         
        
         dev.off()
@@ -326,25 +365,27 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         return(fn)
 }
 
-curvecolor <- function(ploc, tdf, df, range) {
+curvecolor <- function(p_table, tdf, df, range) {
+        
+        selc_peak <- p_table[which(p_table$area==max(p_table$area)),]
         
         
         
+        shd_bl <- grep(min(selc_peak$peak_s_time), tdf[,1], fixed=TRUE)
+        shd_el <- grep(max(selc_peak$peak_e_time), tdf[,1], fixed=TRUE)
         
-        shd_bl <- grep(df[ploc+4, 2], tdf[,1], fixed=TRUE)
-        shd_el <- grep(df[ploc+5,1], tdf[,1], fixed=TRUE)
         if (length(shd_bl) == 0) {
-                bt_m1 <- type.convert(df[ploc+4,2])-0.0001
+                bt_m1 <- min(selc_peak$peak_s_time)-0.0001
                 shd_bl_m1 <- grep(bt_m1, tdf[,1], fixed=TRUE)
-                bt_p1 <- type.convert(df[ploc+4,2])+0.0001
+                bt_p1 <- min(selc_peak$peak_s_time)+0.0001
                 shd_bl_p1 <- grep(bt_p1, tdf[,1], fixed=TRUE)
                 if (length(shd_bl_m1) > 0) shd_bl <- shd_bl_m1
                 if (length(shd_bl_p1) > 0) shd_bl <- shd_bl_p1
         }
         if (length(shd_el) == 0) {
-                et_m1 <- type.convert(df[ploc+5,1])-0.0001
+                et_m1 <- max(selc_peak$peak_e_time)-0.0001
                 shd_el_m1 <- grep(et_m1, tdf[,1], fixed=TRUE)
-                et_p1 <- type.convert(df[ploc+5,1])+0.0001
+                et_p1 <- max(selc_peak$peak_e_time)+0.0001
                 shd_el_p1 <- grep(et_p1, tdf[,1], fixed=TRUE)
                 if (length(shd_el_m1) > 0) shd_el <- shd_el_m1
                 if (length(shd_el_p1) > 0) shd_el <- shd_el_p1
@@ -357,10 +398,10 @@ curvecolor <- function(ploc, tdf, df, range) {
                         shd_e <- max(shd_el)
                         shd <- type.convert(tdf[shd_b:shd_e,])
                         shd[,2] <- (shd[,2]/100)*range
-                        shd_b_au <- (type.convert(df[ploc+6,2])/1000000)
-                        shd_e_au <- (type.convert(df[ploc+7,1])/1000000)
-                        shd[1,2] <- min((type.convert(df[ploc+6,2])/1000000), shd[1,2])
-                        shd[length(shd[,1]),2] <- min((type.convert(df[ploc+7,1])/1000000), shd[length(shd[,1]),2])
+                        shd_b_au <- selc_peak$s_int[1]
+                        shd_e_au <- selc_peak$e_int[length(selc_peak$pl)]
+                        shd[1,2] <- min(shd_b_au, shd[1,2])
+                        shd[length(shd[,1]),2] <- min(shd_e_au, shd[length(shd[,1]),2])
                         
                         return (shd)}       
 
@@ -374,11 +415,13 @@ peak_table <- function(df) {
                 pl <- peak_loc[l]
                 rt <- type.convert(df[peak_loc[l]+3,2])
                 area <- type.convert(df[peak_loc[l]+11,2])
-                peak_id <- df[peak_loc[l]+1,2]
-                peak_s_time <- df[peak_loc[l]+4,2]
-                peak_e_time <- df[peak_loc[l]+5,1]
-                peak_width <- df[peak_loc[l]+12,2]
-                table <- cbind(pl, peak_id, rt, area, peak_s_time, peak_e_time, peak_width)
+                peak_id <- type.convert(df[peak_loc[l]+1,2])
+                peak_s_time <- type.convert(df[peak_loc[l]+4,2])
+                peak_e_time <- type.convert(df[peak_loc[l]+5,1])
+                peak_width <- type.convert(df[peak_loc[l]+12,2])
+                s_int <- type.convert(df[peak_loc[l]+6,2])/1000000
+                e_int <- type.convert(df[peak_loc[l]+7,1])/1000000
+                table <- cbind(pl, peak_id, rt, area, peak_s_time, peak_e_time, peak_width, s_int, e_int)
                 areatable <- rbind(areatable, table)
                 
         }
@@ -446,13 +489,13 @@ for (i in 1:imax)
                         #Generate labels for HPLC data
                         lc_data <- txti[g_lci[1]:(g_lci[2]-1),]
                         lc_areatable <- peak_table(lc_data)
-                        peak_lc <- lc_areatable[which(lc_areatable$lc_area==max(lc_areatable$lc_area)),]
-                        x_peak_lc <- peak_lc$lc_rt
-                        y_peak_lc <- peak_lc$lc_area
-                        lc_peak <- peak_lc$lc_pl
+                        peak_lc <- lc_areatable[which(lc_areatable$area==max(lc_areatable$area)),]
+                        x_peak_lc <- peak_lc$rt
+                        y_peak_lc <- peak_lc$area
+                        lc_peak <- peak_lc$pl
                         y_peak_txt_lc <- paste("Area % Purity:", y_peak_lc, "%")
                         
-                        lc_shd <- curvecolor(lc_peak, t_lci_LC, lc_data, lc_range)
+                        lc_shd <- curvecolor(lc_areatable, t_lci_LC, lc_data, lc_range)
                         
                         
                         #Analyze FLR data
@@ -465,13 +508,13 @@ for (i in 1:imax)
                         #Generate labels for FLR data
                         flr_data <- txti[g_lci[2]:max(g_spi),]
                         flr_areatable <- peak_table(flr_data)
-                        peak_flr <- flr_areatable[which(flr_areatable$flr_area==max(flr_areatable$flr_area)),]
-                        x_peak_flr <- peak_flr$flr_rt
-                        y_peak_flr <- peak_flr$flr_area
-                        flr_peak <- peak_flr$flr_pl
+                        peak_flr <- flr_areatable[which(flr_areatable$area==max(flr_areatable$area)),]
+                        x_peak_flr <- peak_flr$rt
+                        y_peak_flr <- peak_flr$area
+                        flr_peak <- peak_flr$pl
                         y_peak_txt_flr <- paste("Fluoresent % Purity:", y_peak_flr, "%")
                         
-                        flr_shd <- curvecolor(flr_peak, t_lci_flr, flr_data, flr_range)
+                        flr_shd <- curvecolor(flr_areatable, t_lci_flr, flr_data, flr_range)
                         
                         #Find Range Values
                 
@@ -497,7 +540,7 @@ for (i in 1:imax)
                 y_peak_txt <- paste("Area % Purity:", y_peak, "%")
                 
                 #Generate Peak integration graphing data
-                lc_shd <- curvecolor(peakloc, t_lci, txti, lc_range)
+                lc_shd <- curvecolor(areatable, t_lci, txti, lc_range)
                 #Find LC range value
                 
                 }
@@ -550,7 +593,7 @@ for (i in 1:imax)
                         flrl_3 <- ""
                         flrlabs <- c(paste("FLR", dfb),"",flrl_1, flrl_2, flrl_3, "Time", "Emission %", "o", flr_dis_range)
                         
-                        fn_flr <- coa_plot(x_lci_flr, y_lci_flr_au, x_peak_flr, flr_range, y_peak_txt_flr,FALSE,TRUE,dfb,"flr",flrlabs, shd=flr_shd, so=SO[i])
+                        fn_flr <- coa_plot(x_lci_flr, y_lci_flr_au, x_peak_flr, flr_range, y_peak_txt_flr,FALSE,TRUE,dfb,"fl",flrlabs, shd=flr_shd, so=SO[i])
                 }
                 }
                 
