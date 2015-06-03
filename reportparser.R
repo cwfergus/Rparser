@@ -289,6 +289,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
              main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
              col.lab="blue", col.axis="blue", ylim = ylim
         )
+        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
         if (pt_b) {
                 if (length(l_txt)>=10) {
                         min <- 0.5*max(y_txt)
@@ -311,7 +312,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 polygon(shd, density=NA, col="green", border="black")
                 text (min(x), max(y), labels[9], pos=4)
         }
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        
         
         text(max(x),max(y), labels[3], pos=2)
         text(max(x),0.96*max(y), labels[4], pos=2)
