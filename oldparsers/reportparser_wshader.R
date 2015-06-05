@@ -275,7 +275,7 @@ localMaxima <- function(x) {
         y
 }
 
-coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="black", so)
+coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="black", shd=NULL, so)
 {
         # x,y are vectors; pt_b TRUE/FALSe to show point txt; pt_min: min value to show pt txt
         # fb = file base name; gr_t = mz or lc plot type; labels includes titles, axis labels, and other specs
@@ -309,7 +309,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         }
         if(pt_c) {
                 textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
-                
+                polygon(shd, density=NA, col="green", border="black")
                 text (min(x), max(y), labels[9], pos=4)
         }
         
@@ -355,7 +355,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         }
         if(pt_c) {
                 textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
-                
+                polygon(shd, density=NA, col="green", border="black")
                 mtext (labels[9], side=3, adj=0)
                 mtext(labels[3], side=3, line=1, adj=1)
                 mtext(labels[4], side=3, line=0, adj=1)
@@ -368,7 +368,48 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         return(fn)
 }
 
+curvecolor <- function(p_table, tdf, df, range) {
+        
+        selc_peak <- p_table[which(p_table$area==max(p_table$area)),]
+        
+        
+        
+        shd_bl <- grep(min(selc_peak$peak_s_time), tdf[,1], fixed=TRUE)
+        shd_el <- grep(max(selc_peak$peak_e_time), tdf[,1], fixed=TRUE)
+        
+        if (length(shd_bl) == 0) {
+                bt_m1 <- min(selc_peak$peak_s_time)-0.0001
+                shd_bl_m1 <- grep(bt_m1, tdf[,1], fixed=TRUE)
+                bt_p1 <- min(selc_peak$peak_s_time)+0.0001
+                shd_bl_p1 <- grep(bt_p1, tdf[,1], fixed=TRUE)
+                if (length(shd_bl_m1) > 0) shd_bl <- shd_bl_m1
+                if (length(shd_bl_p1) > 0) shd_bl <- shd_bl_p1
+        }
+        if (length(shd_el) == 0) {
+                et_m1 <- max(selc_peak$peak_e_time)-0.0001
+                shd_el_m1 <- grep(et_m1, tdf[,1], fixed=TRUE)
+                et_p1 <- max(selc_peak$peak_e_time)+0.0001
+                shd_el_p1 <- grep(et_p1, tdf[,1], fixed=TRUE)
+                if (length(shd_el_m1) > 0) shd_el <- shd_el_m1
+                if (length(shd_el_p1) > 0) shd_el <- shd_el_p1
+        }
+        
+        if (length(shd_bl)==0|length(shd_el)==0) {
+                shd <- paste("Unable to generate shader for:", ProdNum[i])
+                return (shd)
+        } else {        shd_b <- min(shd_bl)
+                        shd_e <- max(shd_el)
+                        shd <- type.convert(tdf[shd_b:shd_e,])
+                        shd[,2] <- (shd[,2]/100)*range
+                        shd_b_au <- selc_peak$s_int[1]
+                        shd_e_au <- selc_peak$e_int[length(selc_peak$pl)]
+                        shd[1,2] <- min(shd_b_au, shd[1,2])
+                        shd[length(shd[,1]),2] <- min(shd_e_au, shd[length(shd[,1]),2])
+                        
+                        return (shd)}       
 
+                
+}
 
 peak_table <- function(df) {
         peak_loc <- grep("[PEAK]", df[,1], fixed=TRUE)
@@ -457,7 +498,7 @@ for (i in 1:imax)
                         lc_peak <- peak_lc$pl
                         y_peak_txt_lc <- paste("Area % Purity:", y_peak_lc, "%")
                         
-                        
+                        lc_shd <- curvecolor(lc_areatable, t_lci_LC, lc_data, lc_range)
                         
                         
                         #Analyze FLR data
@@ -476,7 +517,7 @@ for (i in 1:imax)
                         flr_peak <- peak_flr$pl
                         y_peak_txt_flr <- paste("Fluoresent % Purity:", y_peak_flr, "%")
                         
-                        
+                        flr_shd <- curvecolor(flr_areatable, t_lci_flr, flr_data, flr_range)
                         
                         #Find Range Values
                 
@@ -502,7 +543,7 @@ for (i in 1:imax)
                 y_peak_txt <- paste("Area % Purity:", y_peak, "%")
                 
                 #Generate Peak integration graphing data
-              
+                lc_shd <- curvecolor(areatable, t_lci, txti, lc_range)
                 #Find LC range value
                 
                 }
@@ -542,26 +583,92 @@ for (i in 1:imax)
                 
                 
                 fn_mz <- coa_plot(x_mzi,y_mzi,x_txt,y_txt,x_txt,TRUE,FALSE,dfb,"mz",mzlabs, l_col="red", so=SO[i])        # mass spec
-                
-                if (length(g_lci) == 1) {
-                fn_lc <- coa_plot(x_lci,y_lci_au,x_peak,lc_range,y_peak_txt,FALSE,TRUE,dfb,"lc",lclabs, so=SO[i])	# hplc
+                if (class(lc_shd)=="character") {
+                        print(lc_shd)
                 } else {
-                        fn_lc <- coa_plot(x_lci_LC, y_lci_LC_au, x_peak_lc, lc_range, y_peak_txt_lc,FALSE, TRUE, dfb, "lc", lclabs, so=SO[i])
+                if (length(g_lci) == 1) {
+                fn_lc <- coa_plot(x_lci,y_lci_au,x_peak,lc_range,y_peak_txt,FALSE,TRUE,dfb,"lc",lclabs, shd=lc_shd, so=SO[i])	# hplc
+                } else {
+                        fn_lc <- coa_plot(x_lci_LC, y_lci_LC_au, x_peak_lc, lc_range, y_peak_txt_lc,FALSE, TRUE, dfb, "lc", lclabs, shd=lc_shd, so=SO[i])
                         
                         flrl_1 <- grep("ACQUITY FLR", txti[,2], value=TRUE)
                         flrl_2 <- buf_col
                         flrl_3 <- ""
                         flrlabs <- c(paste("FLR", dfb),"",flrl_1, flrl_2, flrl_3, "Time", "Emission %", "o", flr_dis_range)
                         
-                        fn_flr <- coa_plot(x_lci_flr, y_lci_flr_au, x_peak_flr, flr_range, y_peak_txt_flr,FALSE,TRUE,dfb,"fl",flrlabs, so=SO[i])
+                        fn_flr <- coa_plot(x_lci_flr, y_lci_flr_au, x_peak_flr, flr_range, y_peak_txt_flr,FALSE,TRUE,dfb,"fl",flrlabs, shd=flr_shd, so=SO[i])
+                }
                 }
                 
         }
 }
 
 
-rm(list=ls())
+#rm(list=ls())
 
 ##### testing####
 
-
+# infl_find <- function(values, loc) {
+#         infl <- c(FALSE, diff(diff(values)>0)!=0)
+#         point <- which(infl==TRUE)
+#         if (length(point)==0 & loc =="bl") {
+#                 point <- 1
+#         }
+#         if (length(point)==0 & loc =="el") {
+#                 point <- length(values)
+#         } 
+#         if (length(point)>1) {
+#                 point <- point[1]
+#         }
+#         return(point)
+# }
+# 
+# curvecolor <- function(ploc, tdf, df, range) {
+#         
+#         shd_bl <- grep(df[ploc+4, 2], tdf[,1], fixed=TRUE)
+#         #         shd_bl <- ((head(shd_bl, n=1)-40): (tail(shd_bl, n=1)))
+#         shd_bl_v <- type.convert(tdf[shd_bl,2])
+#         
+#         shd_el <- grep(df[ploc+5,1], tdf[,1], fixed=TRUE)
+#         #         shd_el <- ((head(shd_el, n=1)): (tail(shd_el, n=1)+10))
+#         shd_el_v <- type.convert(tdf[shd_el,2])
+#         
+#         shd_b <- shd_bl[infl_find(shd_bl_v, "bl")]
+#         shd_e <- shd_el[infl_find(shd_el_v, "el")]
+#         
+#         
+#         
+#         #         if (length(shd_bl) == 0) {
+#         #                 bt_m1 <- type.convert(df[ploc+4,2])-0.0001
+#         #                 shd_bl_m1 <- grep(bt_m1, tdf[,1], fixed=TRUE)
+#         #                 bt_p1 <- type.convert(df[ploc+4,2])+0.0001
+#         #                 shd_bl_p1 <- grep(bt_p1, tdf[,1], fixed=TRUE)
+#         #                 if (length(shd_bl_m1) > 0) shd_bl <- shd_bl_m1
+#         #                 if (length(shd_bl_p1) > 0) shd_bl <- shd_bl_p1
+#         #         }
+#         #         if (length(shd_el) == 0) {
+#         #                 et_m1 <- type.convert(df[ploc+5,1])-0.0001
+#         #                 shd_el_m1 <- grep(et_m1, tdf[,1], fixed=TRUE)
+#         #                 et_p1 <- type.convert(df[ploc+5,1])+0.0001
+#         #                 shd_el_p1 <- grep(et_p1, tdf[,1], fixed=TRUE)
+#         #                 if (length(shd_el_m1) > 0) shd_el <- shd_el_m1
+#         #                 if (length(shd_el_p1) > 0) shd_el <- shd_el_p1
+#         #         }
+#         
+#         if (length(shd_bl)==0|length(shd_el)==0) {
+#                 shd <- paste("Unable to generate shader for:", ProdNum[i])
+#                 return (shd)
+#         } else {
+#                 shd <- type.convert(tdf[shd_b:shd_e,])
+#                 (shd[,2]*range)/100 -> shd[,2]
+#                 shd_b_au <- (type.convert(df[ploc+6,2])/1000000)
+#                 shd_e_au <- (type.convert(df[ploc+7,1])/1000000)
+#                 
+#                 if(shd_b_au > shd[1,2]) {}
+#                 
+#                 shd[1,2] <- min((type.convert(df[ploc+6,2])/1000000), shd[1,2])
+#                 shd[length(shd[,1]),2] <- min((type.convert(df[ploc+7,1])/1000000), shd[length(shd[,1]),2])
+#                 
+#                 return (shd)}
+#         
+# }
