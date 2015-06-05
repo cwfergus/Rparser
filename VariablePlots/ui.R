@@ -55,7 +55,7 @@ shinyUI(navbarPage("QC data lookup",
                                             tags$br(),
                                             textInput("dlpath", "Download Path"),
                                             actionButton("browse", "Set Download Path"),
-                                            actionButton("downloadplots", "Download Plots")
+                                            downloadButton("downloadplots", "Download Plots2")
                                     ),
                                     mainPanel(uiOutput("plots"))
                                     
@@ -72,12 +72,14 @@ shinyUI(navbarPage("QC data lookup",
                                                     c(Choose="", QCB_options),
                                                     selectize = TRUE,
                                                     multiple = TRUE),
+                                            actionButton("QCBrefresh","Refresh QCB Choices"),
                                             actionButton("goButton", "Parse Data"),
                                             downloadButton('parseddata', 'Download')
                                     ),
                                     mainPanel(
                                             textOutput("message"),
-                                            tableOutput("reports")
+                                            tableOutput("reports"),
+                                            uiOutput("genplots")
                                     )
                             )
                    )
