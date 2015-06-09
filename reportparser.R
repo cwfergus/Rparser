@@ -210,56 +210,17 @@ Results_null <- vector(mode = "character", length = length(Results))
 Area_null <- vector(mode = "character", length = length(Area))
 
 #Make a vector of column names just to make it easy.
-columnnames <- c("Well",
-                 "ProdNum",
-                 "Date",
-                 "Time",
-                 "UserName",
-                 "Instrument",
-                 "Results",
-                 "PlateLoc",
-                 "Row",
-                 "Col",
-                 "SSID",
-                 "ExpectMass",
-                 "TestType",
-                 "SO",
-                 "ESBarCode",
-                 "Area")
+columnnames <- c("Well", "ProdNum", "Date", "Time", "UserName", "Instrument", 
+                 "Results", "PlateLoc", "Row", "Col", "SSID", "ExpectMass", 
+                 "TestType", "SO", "ESBarCode", "Area")
 #Bind together the different vectors into a data frame.
-msESMS <- data.frame(cbind(Well,
-                           ProdNum,
-                           Date,
-                           Time,
-                           UserName,
-                           Instrument,
-                           Results,
-                           PlateLoc,
-                           Row,
-                           Col,
-                           SSID,
-                           ExpectMass,
-                           TestType_MS,
-                           SO,
-                           ESBarCode,
-                           Area_null))
+msESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument, 
+                           Results, PlateLoc, Row, Col, SSID, ExpectMass, 
+                           TestType_MS, SO, ESBarCode, Area_null))
 
-areaESMS <- data.frame(cbind(Well,
-                             ProdNum,
-                             Date,
-                             Time,
-                             UserName,
-                             Instrument,
-                             Results_null,
-                             PlateLoc,
-                             Row,
-                             Col,
-                             SSID,
-                             ExpectMass_null,
-                             TestType_HPLC,
-                             SO,
-                             ESBarCode,
-                             Area))
+areaESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument,
+                             Results_null, PlateLoc, Row, Col, SSID,
+                             ExpectMass_null, TestType_HPLC, SO, ESBarCode, Area))
 
 #Append the new column names, removing the Area_null name to Area
 colnames(msESMS) <- columnnames
@@ -267,7 +228,8 @@ colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
 #Writes out the now ESMS replica data to the outputnume
-write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, quote=FALSE, row.names=FALSE, na="")
+write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, 
+            quote=FALSE, row.names=FALSE, na="")
 # print out the list of barcodes parsed and imported
 print(fn_list)
 print("Don't forget to now import into Filemaker")
@@ -378,8 +340,6 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         return(fn)
 }
 
-
-
 peak_table <- function(df) {
         peak_loc <- grep("[PEAK]", df[,1], fixed=TRUE)
         areatable <- data.frame()
@@ -441,11 +401,10 @@ for (i in 1:imax)
                 } else {i_txt <- localMaxima(y_min) 
                         x_txt <- X_min[i_txt]
                         y_txt <- y_min[i_txt]}
-                 # only peak maxima instead of clusters of points, doesn't need change.
-                
                 #IF an FLR trace exists do the following:
-                if (length(g_lci) > 1) {
+                if (length(g_lci) > 1) { #If an FLR trace exists, do the following
                         
+                        #Find Range values for FLR and LC
                         lcflr_range <- type.convert(txti[grep("MaxIntensity", txti[,1]),2])
                         lc_range <- lcflr_range[1]/1000000
                         flr_range <- lcflr_range[2]
@@ -456,7 +415,7 @@ for (i in 1:imax)
                         t_lci_LC <- txti[(g_lci[1]+1):m_lci_LC,]
                         x_lci_LC <- type.convert(t_lci_LC[,1])
                         y_lci_LC <- type.convert(t_lci_LC[,2])
-                        
+                        #Convert Y values to AU units using the range.
                         y_lci_LC_au <- (y_lci_LC/100)*lc_range
                         #Generate labels for HPLC data
                         lc_data <- txti[g_lci[1]:(g_lci[2]-1),]
@@ -466,9 +425,6 @@ for (i in 1:imax)
                         y_peak_lc <- peak_lc$area
                         lc_peak <- peak_lc$pl
                         y_peak_txt_lc <- paste("Area % Purity:", y_peak_lc, "%")
-                        
-                        
-                        
                         
                         #Analyze FLR data
                         m_lci_flr <- g_spi[min(which(g_spi>g_lci[2]))]-1
@@ -485,12 +441,6 @@ for (i in 1:imax)
                         y_peak_flr <- peak_flr$area
                         flr_peak <- peak_flr$pl
                         y_peak_txt_flr <- paste("Fluoresent % Purity:", y_peak_flr, "%")
-                        
-                        
-                        
-                        #Find Range Values
-                
-                
                 
                 } else {
                 # analyze hplc data
