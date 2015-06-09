@@ -140,50 +140,51 @@ samplesplit <- split(data, cumsum(data[,"Type"] == "[SAMPLE]"))
 #Then it generates a vector of Found masses
 # If it can't find a mass, then it puts 0 into its place. This solves dead wells.
 Results <- vector()
-for (i in 1:length(samplesplit)) {
-        workingdata <- as.data.frame(samplesplit[i])
-        colnames(workingdata) <- c("Type", "Value")
-        Foundmass <- workingdata$Value[grep("BPM", workingdata$Type)]
-        if (length(Foundmass) == 0) {
-                Foundmass <- 0
-        } 
-        Results <- append(Results, Foundmass)
-}
-
-#The loop does a similar thing but for Area. It also looks for FLR data being
-#available. If FLR data exists, it splits up the sample data into chromatogram
-#split data. Then it finds the Area values for both FLR and UV. 
-#If the length of the split is 1 then no area values exists, and it appends 0 for the
-#sample.
 Area <- vector()
 FlrArea <- vector()
-for (i in 1:length(samplesplit)) {
-        workingdata <- as.data.frame(samplesplit[i])
+for (ss in 1:length(samplesplit)) {
+        workingdata <- as.data.frame(samplesplit[ss])
         colnames(workingdata) <- c("Type", "Value")
-        chromosplit <- split(workingdata, cumsum(workingdata[,"Type"]== "[CHROMATOGRAM]"))
-        if (length(chromosplit) > 2) {
-                FLRlocations <- grep("ACQUITY FLR", chromosplit)
-                for (x in 1:length(FLRlocations)) {
-                        flr <- FLRlocations[x]
-                        workingdata2 <- as.data.frame(chromosplit[flr])
-                        colnames(workingdata2) <- c("Type", "Value")
-                        percentareas2 <- as.numeric(workingdata2$Value[grep("Area %Total", workingdata2$Type)])
-                        FlrArea <- append(FlrArea, max(percentareas2))
+        functionsplit <- split(workingdata, cumsum(workingdata[,"Type"]=="[FUNCTION]"))
+        for (f in 2:length(functionsplit)) {
+                if (nrow(as.data.frame(functionsplit[f])) <= 20) {
+                        next
                 }
-                if (length(chromosplit) == 1) {
-                        Area <- append(Area, 0)
+                if (any(grepl("MS", functionsplit[f]))){
+                        ms_data <- as.data.frame(functionsplit[f])
+                        colnames(ms_data) <- c("Type", "Value")
                 }
-                workingdata3 <- as.data.frame(chromosplit[2])
-                colnames(workingdata3) <- c("Type", "Value")
-                percentareas3 <- as.numeric(workingdata3$Value[grep("Area %Total", workingdata3$Type)])
-                Area <- append(Area, max(percentareas3))
-        } else {
-                if (length(chromosplit) == 1) {
-                        Area <- append(Area, 0)
-                } else{
-                        percentareas <- as.numeric(workingdata$Value[grep("Area %Total", workingdata$Type)])
-                        Area <- append(Area, max(percentareas)) }}
+                if (any(grepl("DAD", functionsplit[f]))){
+                        dad_data <- as.data.frame(functionsplit[f])
+                        colnames(dad_data) <- c("Type", "Value")
+                }
+                if (any(grepl("FLR", functionsplit[f]))){
+                        flr_data <- as.data.frame(functionsplit[f])
+                        colnames(flr_data) <- c("Type", "Value")
+                }
+        }
+        
+        ## Find Mass value:
+        if (exists("ms_data")) {
+                Foundmass <- ms_data$Value[grep("BPM", ms_data$Type)]
+        } else {Foundmass <- 0}
+        Results <- append(Results, Foundmass)
+        
+        ## Find LC Area
+        if (exists("dad_data")) {
+                percentareas <- as.numeric(dad_data$Value[grep("Area %Total", dad_data$Type)])
+                Foundarea <- max(percentareas)
+        } else {Foundarea <- 0}
+        Area <- append(Area, Foundarea)
+        
+        ## Find FLR Area
+        if (exists("flr_data")) {
+                percentareas2 <- as.numeric(flr_data$Value[grep("Area %Total", flr_data$Type)])
+                FoundFLRarea <- max(percentareas2)
+        } else {FoundFLRarea <- 0}
+        FlrArea <- append(FlrArea, FoundFLRarea)
 }
+
 
 #Generates a Test Type vector, which is just the TestType repeated over and over
 rep_len(x = "MS", length.out = length(f2)) -> TestType_MS
@@ -560,8 +561,6 @@ for (i in 1:imax)
 }
 
 
-rm(list=ls())
+#rm(list=ls())
 
-##### testing####
-
-
+#### testing####
