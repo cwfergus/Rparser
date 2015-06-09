@@ -100,8 +100,6 @@ while (filename != "n") {
 # The Parser uses grep commands to look for certain words/Reg Exp. Then it takes a value
 # in either the row over or somewhere else related to the word.
 
-
-
 data$Value[grep("Well", data$Type)] -> f2 
 data$Value[grep("UserName", data$Type)] -> UserName
 data$Value[grep("^Instrument$", data$Type)] -> Instrument
@@ -135,53 +133,64 @@ Time <- grep(":", data$Value[grep("^Time$", data$Type)], value=TRUE) %>%
 # Splits data by SAMPLE, enabling looking at each sample for each value.
 samplesplit <- split(data, cumsum(data[,"Type"] == "[SAMPLE]"))
 
-#The loop looks within each Sample (now sperated in a list), and finds the BPM row
-#IT then collects the value next to it. If there is no value found, it makes it a 0
-#Then it generates a vector of Found masses
-# If it can't find a mass, then it puts 0 into its place. This solves dead wells.
+#Generates empty vectors for the results to go into
 Results <- vector()
 Area <- vector()
 FlrArea <- vector()
+#The following loop finds all the Test data. It looks at each sample individually and
+#generates data frames based on the type of data. Then its searches for the test result
+# If a specific test is missing, or is shorter than 20 lines (also means missing data)
 for (ss in 1:length(samplesplit)) {
-        workingdata <- as.data.frame(samplesplit[ss])
-        colnames(workingdata) <- c("Type", "Value")
-        functionsplit <- split(workingdata, cumsum(workingdata[,"Type"]=="[FUNCTION]"))
-        for (f in 2:length(functionsplit)) {
+        workingdata <- as.data.frame(samplesplit[ss]) #Just 1 samples data
+        colnames(workingdata) <- c("Type", "Value") 
+        functionsplit <- split(workingdata, cumsum(workingdata[,"Type"]=="[FUNCTION]")) #split data by function
+        for (f in 2:length(functionsplit)) { #skip the first section, this is an intro
                 if (nrow(as.data.frame(functionsplit[f])) <= 20) {
-                        next
+                        next #If the function contains less that 20 rows, ignore it
                 }
-                if (any(grepl("MS", functionsplit[f]))){
-                        ms_data <- as.data.frame(functionsplit[f])
+                if (any(grepl("MS", functionsplit[f]))){ #Is this MS data?
+                        ms_data <- as.data.frame(functionsplit[f]) #put in data frame
                         colnames(ms_data) <- c("Type", "Value")
                 }
-                if (any(grepl("DAD", functionsplit[f]))){
+                if (any(grepl("DAD", functionsplit[f]))){ #Is it LC data?
                         dad_data <- as.data.frame(functionsplit[f])
                         colnames(dad_data) <- c("Type", "Value")
                 }
-                if (any(grepl("FLR", functionsplit[f]))){
+                if (any(grepl("FLR", functionsplit[f]))){ #Is it FLR data?
                         flr_data <- as.data.frame(functionsplit[f])
                         colnames(flr_data) <- c("Type", "Value")
                 }
         }
         
         ## Find Mass value:
-        if (exists("ms_data")) {
+        if (exists("ms_data")) { #If Ms data exists, find the mass
                 Foundmass <- ms_data$Value[grep("BPM", ms_data$Type)]
-        } else {Foundmass <- 0}
-        Results <- append(Results, Foundmass)
+        } else { #Otherwise, put 0 for the mass and report missing data
+                Foundmass <- 0
+                msg <- paste(ProdNum[ss], "is Missing MS data")
+                print(msg)
+        } #append the sample result to all results
+        Results <- append(Results, Foundmass) 
         
         ## Find LC Area
-        if (exists("dad_data")) {
+        if (exists("dad_data")) { #If LC data exists, find Max Area %
                 percentareas <- as.numeric(dad_data$Value[grep("Area %Total", dad_data$Type)])
                 Foundarea <- max(percentareas)
-        } else {Foundarea <- 0}
+        } else { #Otherwise put 0 for Area and report missing data
+                Foundarea <- 0
+                msg <- paste(ProdNum[ss], "is missing LC data")
+                print(msg)
+        } #Append result to all results
         Area <- append(Area, Foundarea)
         
         ## Find FLR Area
-        if (exists("flr_data")) {
+        if (exists("flr_data")) { #If FLR data exits, find FLR area
                 percentareas2 <- as.numeric(flr_data$Value[grep("Area %Total", flr_data$Type)])
                 FoundFLRarea <- max(percentareas2)
-        } else {FoundFLRarea <- 0}
+        } else {#Otherwise put 0 for FLR area
+                FoundFLRarea <- 0
+                #Don't bother reporting as most samples won't have FLR data.
+        } #Append FLR area of sample to overall FlrArea vector
         FlrArea <- append(FlrArea, FoundFLRarea)
 }
 
