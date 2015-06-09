@@ -151,14 +151,17 @@ for (ss in 1:length(samplesplit)) {
                 if (any(grepl("MS", functionsplit[f]))){ #Is this MS data?
                         ms_data <- as.data.frame(functionsplit[f]) #put in data frame
                         colnames(ms_data) <- c("Type", "Value")
+                        next
                 }
                 if (any(grepl("DAD", functionsplit[f]))){ #Is it LC data?
                         dad_data <- as.data.frame(functionsplit[f])
                         colnames(dad_data) <- c("Type", "Value")
+                        next
                 }
                 if (any(grepl("FLR", functionsplit[f]))){ #Is it FLR data?
                         flr_data <- as.data.frame(functionsplit[f])
                         colnames(flr_data) <- c("Type", "Value")
+                        next
                 }
         }
         
