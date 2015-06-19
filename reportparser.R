@@ -148,7 +148,7 @@ for (ss in 1:length(samplesplit)) {
                 if (nrow(as.data.frame(functionsplit[f])) <= 20) {
                         next #If the function contains less that 20 rows, ignore it
                 }
-                if (any(grepl("MS", functionsplit[f]))){ #Is this MS data?
+                if (any(grepl("% BPI", functionsplit[f]))){ #Is this MS data?
                         ms_data <- as.data.frame(functionsplit[f]) #put in data frame
                         colnames(ms_data) <- c("Type", "Value")
                         next
@@ -159,8 +159,8 @@ for (ss in 1:length(samplesplit)) {
                         next
                 }
                 if (any(grepl("FLR", functionsplit[f]))){ #Is it FLR data?
-                        flr_data <- as.data.frame(functionsplit[f])
-                        colnames(flr_data) <- c("Type", "Value")
+                        flr_data2 <- as.data.frame(functionsplit[f])
+                        colnames(flr_data2) <- c("Type", "Value")
                         next
                 }
         }
@@ -187,8 +187,8 @@ for (ss in 1:length(samplesplit)) {
         Area <- append(Area, Foundarea)
         
         ## Find FLR Area
-        if (exists("flr_data")) { #If FLR data exits, find FLR area
-                percentareas2 <- as.numeric(flr_data$Value[grep("Area %Total", flr_data$Type)])
+        if (exists("flr_data2")) { #If FLR data exits, find FLR area
+                percentareas2 <- as.numeric(flr_data2$Value[grep("Area %Total", flr_data2$Type)])
                 FoundFLRarea <- max(percentareas2)
         } else {#Otherwise put 0 for FLR area
                 FoundFLRarea <- 0
@@ -526,3 +526,7 @@ for (i in 1:imax)
 #rm(list=ls())
 
 #### testing####
+grep("}", workingdata[,"Type"]) -> boundrypossibles
+for (i in length(boundrypossibles)) {
+        
+} 
