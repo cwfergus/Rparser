@@ -523,10 +523,6 @@ for (i in 1:imax)
 }
 
 
-#rm(list=ls())
+rm(list=ls())
 
 #### testing####
-grep("}", workingdata[,"Type"]) -> boundrypossibles
-for (i in length(boundrypossibles)) {
-        
-} 
