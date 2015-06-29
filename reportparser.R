@@ -269,18 +269,19 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 if (length(l_txt)>=10) {
                         min <- 0.5*max(y_txt)
                         y_min <- which(y_txt>min)
-                        x_txt <- x_txt[y_min]
-                        y_txt <- y_txt[y_min]
-                        l_txt <- l_txt[y_min]
-                        points(x_txt, y_txt, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
-                        legend("right", legend=l_txt, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
+                        x_txt2 <- x_txt[y_min]
+                        y_txt2 <- y_txt[y_min]
+                        l_txt2 <- l_txt[y_min]
+                        points(x_txt2, y_txt2, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
+                        legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
                 } else {
                         if (length(l_txt)==2){
-                                x_txt <- append(0, x_txt)
-                                y_txt <- append(0, y_txt)
-                                l_txt <- append("", l_txt)
-                        }
-                        thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)} 
+                                x_txt2 <- append(0, x_txt)
+                                y_txt2 <- append(0, y_txt)
+                                l_txt2 <- append("", l_txt)
+                                thigmophobe.labels(x_txt2, y_txt2, l_txt2, cex = 1)
+                        } else {thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)}
+                        } 
         }
         if(pt_c) {
                 textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
@@ -311,18 +312,19 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 if (length(l_txt)>=10) {
                         min <- 0.5*max(y_txt)
                         y_min <- which(y_txt>min)
-                        x_txt <- x_txt[y_min]
-                        y_txt <- y_txt[y_min]
-                        l_txt <- l_txt[y_min]
-                        points(x_txt, y_txt, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
-                        legend("right", legend=l_txt, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
+                        x_txt2 <- x_txt[y_min]
+                        y_txt2 <- y_txt[y_min]
+                        l_txt2 <- l_txt[y_min]
+                        points(x_txt2, y_txt2, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
+                        legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
                 } else {
                         if (length(l_txt)==2){
-                                x_txt <- append(0, x_txt)
-                                y_txt <- append(0, y_txt)
-                                l_txt <- append("", l_txt)
-                        }
-                        thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)} 
+                                x_txt3 <- append(0, x_txt)
+                                y_txt3 <- append(0, y_txt)
+                                l_txt3 <- append("", l_txt)
+                                thigmophobe.labels(x_txt3, y_txt3, l_txt3, cex = 1)
+                        } else {thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)}
+                        } 
         }
         if(pt_b) {text(max(x),max(y), labels[3], pos=2)
                   mtext(labels[4], side=3, line=1, adj=1)
