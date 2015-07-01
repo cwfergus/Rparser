@@ -250,59 +250,77 @@ localMaxima <- function(x) {
         y
 }
 
+custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
+                           linecol = par("fg"), srt = 0, ...) 
+{
+        rounder <- function(x) {round(x+10^-9)}
+        
+        posfinder <- function(x) {
+                tens <- seq(0, 100, 10)
+                
+                for (i in 1:length(x)) {
+                        value <- x[i]
+                        x[i]<- tens[which.min(abs(tens-value))]
+                        tens <- tens[which(tens!=x[i])]
+                }
+                x
+        }
+        
+        ny <- length(sl_y)
+        divide <- rounder(ny/2)
+        
+        if (is.na(x_offsets)) {
+                x_offset <- diff(par("usr")[1:2])/15 
+                x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
+        }
+        
+        new_x <- sl_x + x_offsets
+        
+        x_left_pts <- new_x[1:divide]
+        left_labels <- sl_labels[1:divide]
+        
+        x_right_pts <- new_x[(divide+1):length(new_x)]
+        right_labels <- sl_labels[(divide+1):length(new_x)]
+        
+        
+        
+        y_left_pts <- sl_y[1:divide]
+        y_right_pts <- sl_y[(divide+1):length(sl_y)]
+        
+        y_left_pts <- posfinder(y_left_pts)
+        y_right_pts <- posfinder(y_right_pts)
+        
+        new_y <- c(y_left_pts, y_right_pts)
+        #                         sl_x <- sl_x + x_offsets
+        #                         sort.index <- sort.list(sl_x)
+        #                         sl_x <- sl_x[sort.index]
+        #                         sl_y <- sl_y[sort.index]
+        #                         nx <- length(sl_x)
+        #                         newx <- seq(sl_x[1], sl_x[nx], length = length(sl_labels))
+        
+        segments(new_x, new_y, sl_x, sl_y)
+        
+        text(x_left_pts, y_left_pts, left_labels, srt = srt, pos=2)
+        text(x_right_pts, y_right_pts, right_labels, srt=srt, pos=4)
+        
+}
+
+
 coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="black", so)
 {
         # x,y are vectors; pt_b TRUE/FALSe to show point txt; pt_min: min value to show pt txt
         # fb = file base name; gr_t = mz or lc plot type; labels includes titles, axis labels, and other specs
         
-          "//Data/it/DBMS/Integrations/ERPDev/imgs/lcms/" -> md
-          dev_fn <- paste(md, fb, "_", gr_t, ".png", sep="")
-          png(filename=dev_fn, width=1400, height=500) # Open a device: bmp & pdf are other options here
-        if (pt_b) {ylim <- c(0,105)} else {ylim <- range(y)}
-          
-          plot(x, y, 
-             main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
-             col.lab="blue", col.axis="blue", ylim = ylim
-        )
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
-        if (pt_b) {
-                if (length(l_txt)>=10) {
-                        min <- 0.5*max(y_txt)
-                        y_min <- which(y_txt>min)
-                        x_txt2 <- x_txt[y_min]
-                        y_txt2 <- y_txt[y_min]
-                        l_txt2 <- l_txt[y_min]
-                        points(x_txt2, y_txt2, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
-                        legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
-                } else {
-                        if (length(l_txt)==2){
-                                x_txt2 <- append(0, x_txt)
-                                y_txt2 <- append(0, y_txt)
-                                l_txt2 <- append("", l_txt)
-                                thigmophobe.labels(x_txt2, y_txt2, l_txt2, cex = 1)
-                        } else {thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)}
-                        } 
-        }
-        if(pt_c) {
-                textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
-                
-                text (min(x), max(y), labels[9], pos=4)
+        "//Data/it/DBMS/Integrations/ERPDev/imgs/lcms/" -> md
+        dev_fn <- paste(md, fb, "_", gr_t, ".png", sep="")
+        
+        png(filename=dev_fn, width=1400, height=500) # Open a device: bmp & pdf are other options here
+        if (pt_b) {ylim <- c(0,105)} 
+        else {
+                ylim <- range(y)
+                ylim[2] <- ylim[2]*1.05
         }
         
-        
-        text(max(x),max(y), labels[3], pos=2)
-        text(max(x),0.96*max(y), labels[4], pos=2)
-        text(max(x),0.92*max(y), labels[5], pos=2)
-          dev.off()
-        
-        
-        path <- paste("//DATA4/Mass Spec DataRrepository/imgs", so, sep="/")
-        if (!file.exists(path)) {
-                dir.create(path)
-        }
-        fn <- paste(path, "/", fb,"_",gr_t,".png",sep="")                 # filename
-        png(filename=fn, width=680, height=440)	# Open a device: bmp & pdf are other options here
-        if (pt_b) {ylim <- c(0,105)} else {ylim <- range(y)}
         plot(x, y, 
              main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
              col.lab="blue", col.axis="blue", ylim = ylim
@@ -318,28 +336,71 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                         points(x_txt2, y_txt2, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
                         legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
                 } else {
-                        if (length(l_txt)==2){
-                                x_txt3 <- append(0, x_txt)
-                                y_txt3 <- append(0, y_txt)
-                                l_txt3 <- append("", l_txt)
-                                thigmophobe.labels(x_txt3, y_txt3, l_txt3, cex = 1)
+                        if (length(l_txt)>=2){
+                                
+                                custom.labels(x_txt, y_txt, l_txt)
                         } else {thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)}
-                        } 
+                }
+                text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+                mtext(labels[4], side=3, line=1, adj=1)
+                mtext(labels[5], side=3, line=0, adj=1)
         }
-        if(pt_b) {text(max(x),max(y), labels[3], pos=2)
-                  mtext(labels[4], side=3, line=1, adj=1)
-                  mtext(labels[5], side=3, line=0, adj=1)
-        }
+        
         if(pt_c) {
-                textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
-                
+                #textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
+                text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
                 mtext (labels[9], side=3, adj=0)
                 mtext(labels[3], side=3, line=1, adj=1)
                 mtext(labels[4], side=3, line=0, adj=1)
         }
         
+        dev.off()
         
-       
+        
+        path <- paste("//DATA4/Mass Spec DataRrepository/imgs", so, sep="/")
+        if (!file.exists(path)) {
+                dir.create(path)
+        }
+        fn <- paste(path, "/", fb,"_",gr_t,".png",sep="")                 # filename
+        png(filename=fn, width=680, height=440)	# Open a device: bmp & pdf are other options here
+        if (pt_b) {
+                ylim <- c(0,105)
+                } else {
+                        ylim <- range(y)
+                        ylim[2] <- ylim[2]*1.05
+                }
+        plot(x, y, 
+             main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
+             col.lab="blue", col.axis="blue", ylim = ylim
+        )
+        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        if (pt_b) {
+                if (length(l_txt)>=10) {
+                        min <- 0.5*max(y_txt)
+                        y_min <- which(y_txt>min)
+                        x_txt2 <- x_txt[y_min]
+                        y_txt2 <- y_txt[y_min]
+                        l_txt2 <- l_txt[y_min]
+                        points(x_txt2, y_txt2, type="p", pch=c(15,16,17), col=rainbow(n=10, start=2/6), cex=2)
+                        legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
+                } else {
+                        if (length(l_txt)>=2){
+                                custom.labels(x_txt, y_txt, l_txt)
+                        } else {
+                                thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)
+                        }
+                }
+                text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+                mtext(labels[4], side=3, line=0.7, adj=1, cex=0.8)
+                mtext(labels[5], side=3, line=0, adj=1, cex=0.8)
+        }
+        if(pt_c) {
+                text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
+                mtext (labels[9], side=3, adj=0, cex=0.8)
+                mtext(labels[3], side=3, line=0.7, adj=1, cex=0.8)
+                mtext(labels[4], side=3, line=0, adj=1, cex=0.8)
+        }
+        
         dev.off()
         # Close the image device that was opened above; the actions in the meantime have been recorded
         return(fn)
@@ -489,21 +550,22 @@ for (i in 1:imax)
                 mzl_3 <- paste("Time", ptime, MaxEnt, grep("Combine", combine, value=TRUE))  # set peak info to label 3
                 # line type: h=histogram-like spikes for mass, o=connect-dots for hplc
                 if (exists("centroid")){
-                        mzlabs  <- c(paste("Mass Spectrum:", dfb),"",mzl_1,mzl_2,mzl_3,"m/z","%","h")
+                        mzlabs  <- c(paste("LGC Biosearch Technologies", "\n", "MS:", dfb, "\n"),"",mzl_1,mzl_2,mzl_3,"m/z","%","h")
                         m_y_txt <- y_txt[which(y_txt>0.25*max(y_txt))]
                         x_txt <- x_txt[which(y_txt==m_y_txt)]
                         y_txt <- m_y_txt
                         rm(centroid)
                 } else {
-                        mzlabs  <- c(paste("Mass Spectrum:", dfb),"",mzl_1,mzl_2,mzl_3,"m/z","%","l")
+                        mzlabs  <- c(paste("LGC Biosearch Technologies", "\n", "MS:", dfb, "\n"),"",mzl_1,mzl_2,mzl_3,"m/z","%","l")
                 }
                 
                 
                 lcl_1 <- grep("DAD:", txti[,2], value=TRUE) 	# hplc conditions
+                lcl_1 <- paste("Diode Array Detector:", str_sub(lcl_1, start=6))
                 buf_col <- t_hdr[grep("^Conditions", t_hdr[,1]),2]
                 lcl_2 <- buf_col  # hplc conditions
                 lcl_3 <- ""  # hplc conditions
-                lclabs  <- c(paste("HPLC:",dfb),"",lcl_1,lcl_2,lcl_3,"Time","AU","o", lc_dis_range)
+                lclabs  <- c(paste("LGC Biosearch Technologies", "\n", "UPLC:",dfb, "\n"),"",lcl_1,lcl_2,lcl_3,"Time (min)","AU","o", lc_dis_range)
                 
                 
                 fn_mz <- coa_plot(x_mzi,y_mzi,x_txt,y_txt,x_txt,TRUE,FALSE,dfb,"mz",mzlabs, l_col="red", so=SO[i])        # mass spec
