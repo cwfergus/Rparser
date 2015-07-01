@@ -250,7 +250,7 @@ localMaxima <- function(x) {
         y
 }
 
-custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
+custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA, ofs_amt=15,
                            linecol = par("fg"), srt = 0, ...) 
 {
         rounder <- function(x) {round(x+10^-9)}
@@ -270,7 +270,7 @@ custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
         divide <- rounder(ny/2)
         
         if (is.na(x_offsets)) {
-                x_offset <- diff(par("usr")[1:2])/15 
+                x_offset <- diff(par("usr")[1:2])/ofs_amt
                 x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
         }
         
@@ -291,12 +291,6 @@ custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
         y_right_pts <- posfinder(y_right_pts)
         
         new_y <- c(y_left_pts, y_right_pts)
-        #                         sl_x <- sl_x + x_offsets
-        #                         sort.index <- sort.list(sl_x)
-        #                         sl_x <- sl_x[sort.index]
-        #                         sl_y <- sl_y[sort.index]
-        #                         nx <- length(sl_x)
-        #                         newx <- seq(sl_x[1], sl_x[nx], length = length(sl_labels))
         
         segments(new_x, new_y, sl_x, sl_y)
         
@@ -338,10 +332,11 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 } else {
                         if (length(l_txt)>=2){
                                 
-                                custom.labels(x_txt, y_txt, l_txt)
+                                custom.labels(x_txt, y_txt, l_txt, ofs_amt=20)
                         } else {thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)}
                 }
                 text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+                mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext(labels[4], side=3, line=1, adj=1)
                 mtext(labels[5], side=3, line=0, adj=1)
         }
@@ -350,6 +345,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 #textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
                 text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
                 mtext (labels[9], side=3, adj=0)
+                mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext(labels[3], side=3, line=1, adj=1)
                 mtext(labels[4], side=3, line=0, adj=1)
         }
@@ -385,17 +381,19 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                         legend("right", legend=l_txt2, pch=c(15,16,17), col=rainbow(n=10, start=2/6))
                 } else {
                         if (length(l_txt)>=2){
-                                custom.labels(x_txt, y_txt, l_txt)
+                                custom.labels(x_txt, y_txt, l_txt, ofs_amt=17)
                         } else {
                                 thigmophobe.labels(x_txt, y_txt, l_txt, cex = 1)
                         }
                 }
                 text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+                mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext(labels[4], side=3, line=0.7, adj=1, cex=0.8)
                 mtext(labels[5], side=3, line=0, adj=1, cex=0.8)
         }
         if(pt_c) {
                 text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
+                mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext (labels[9], side=3, adj=0, cex=0.8)
                 mtext(labels[3], side=3, line=0.7, adj=1, cex=0.8)
                 mtext(labels[4], side=3, line=0, adj=1, cex=0.8)

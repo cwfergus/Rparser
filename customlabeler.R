@@ -1,5 +1,5 @@
 
-custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
+custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA, offset_amt=15
                                   linecol = par("fg"), srt = 0, ...) 
 {
         rounder <- function(x) {round(x+10^-9)}
@@ -19,7 +19,7 @@ custom.labels <- function (sl_x, sl_y, sl_labels = NULL, x_offsets = NA,
         divide <- rounder(ny/2)
         
         if (is.na(x_offsets)) {
-                x_offset <- diff(par("usr")[1:2])/15 
+                x_offset <- diff(par("usr")[1:2])/offset_amt
                 x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
         }
         
