@@ -14,6 +14,10 @@ if (!require(dplyr)){
         install.packages("dplyr")
         library(dplyr)
 } else library(dplyr)
+if (!require(zoo)){
+        install.packages("zoo")
+        library(zoo)
+} else library(zoo)
 
 
 
@@ -233,7 +237,7 @@ print("Don't forget to now import into Filemaker")
 localMaxima <- function(x) {
         # Use -Inf instead if x is numeric (non-integer)
         y <- diff(c(-.Machine$integer.max, x)) > 0L
-        rle(y)$lengths
+        
         y <- cumsum(rle(y)$lengths)
         y <- y[seq.int(1L, length(y), 2L)]
         if (x[[1]] == x[[2]]) {
@@ -450,17 +454,19 @@ for (i in 1:imax)
                 x_mzi <- type.convert(t_mzi[,1])   	# Type is x; make numeric
                 y_mzi <- type.convert(t_mzi[,2])     	# Value is y; make it numeric
                 # calculate text labels for mass spec; only the points that will be printed
-                y_min <- 0.25*max(y_mzi)     # must be over minimum 25% threshold
-                i_min <- which(y_mzi>y_min)
-                X_min <- x_mzi[i_min]
-                y_min <- y_mzi[i_min]
-                if (length(y_min)== 1) {
+                i_txt <- localMaxima(y_mzi)
+                x_LM <- x_mzi[i_txt]
+                y_LM <- y_mzi[i_txt]
+                y_min <- 0.25*max(y_mzi)
+                i_min <- which(y_LM>y_min)
+                x_txt <- x_LM[i_min]
+                y_txt <- y_LM[i_min]
+                if (length(y_mzi)<20){
                         centroid <- "yes"
                         x_txt <- x_mzi
                         y_txt <- y_mzi
-                } else {i_txt <- localMaxima(y_min) 
-                        x_txt <- X_min[i_txt]
-                        y_txt <- y_min[i_txt]}
+                }
+                
                 #IF an FLR trace exists do the following:
                 if (length(g_lci) > 1) { #If an FLR trace exists, do the following
                         
@@ -535,7 +541,7 @@ for (i in 1:imax)
                 machine <- t_hdr[grep("^Type", t_hdr[,1]),2]
                 ionmode <- t_hdr[grep("IonMode", t_hdr[,1]),2]
                 bpi <- type.convert(t_hdr[grep("^BPI", t_hdr[,1]),2])
-                mzl_1 <- paste("Target Mass", mzt)	# set Expected Mass to label 1
+                mzl_1 <- paste("Target Mass", round(mzt,2))	# set Expected Mass to label 1
                 mzl_2 <- paste(machine, ionmode,bpi)  # set MS mode to label 2
                 ptime <- t_hdr[max(grep("^Time", t_hdr[,1])),2]
                 ProcDesc <- t_hdr[grep("ProcDesc", t_hdr[,1]),2]
@@ -545,8 +551,9 @@ for (i in 1:imax)
                 # line type: h=histogram-like spikes for mass, o=connect-dots for hplc
                 if (exists("centroid")){
                         mzlabs  <- c(paste("LGC Biosearch Technologies", "\n", "MS:", dfb, "\n"),"",mzl_1,mzl_2,mzl_3,"m/z","%","h")
-                        m_y_txt <- y_txt[which(y_txt>0.25*max(y_txt))]
-                        x_txt <- x_txt[which(y_txt==m_y_txt)]
+                        i_y_txt <- which(y_txt>0.25*max(y_txt))
+                        m_y_txt <- y_txt[i_y_txt]
+                        x_txt <- x_txt[i_y_txt]
                         y_txt <- m_y_txt
                         rm(centroid)
                 } else {
