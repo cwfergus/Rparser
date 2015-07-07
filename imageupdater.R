@@ -1,12 +1,12 @@
 data_path <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
 data <- data.frame()
-file.list_reprocess <- list.files(data_path, pattern="[[:digit:]]{10}_reprocess.rpt", full.names = TRUE)
+file.list_reprocess <- list.files(data_path, pattern="[[:digit:]]{10}_reprocess.rpt$", full.names = TRUE)
+file.list <- file.list_reprocess[456:length(file.list_reprocess)]
+#file.list_reprocess <- file.list_reprocess[which(file.info(file.list_reprocess)$ctime >= "2015-06-01 00:00:01")]
 
-file.list_reprocess <- file.list_reprocess[which(file.info(file.list_reprocess)$ctime >= "2015-06-01 00:00:01")]
+file.list <- list.files(data_path, pattern="[[:digit:]]{10}.rpt$", full.names = TRUE)
 
-file.list <- list.files(data_path, pattern="[[:digit:]]{10}.rpt", full.names = TRUE)
-
-file.list <- file.list[6000:length(file.list)]
+file.list <- file.list[3692:length(file.list)]
 
 file.list <- append(file.list, file.list_reprocess)
 
@@ -383,13 +383,18 @@ for (i in 1:length(file.list)){
                         i_min <- which(y_mzi>y_min)
                         X_min <- x_mzi[i_min]
                         y_min <- y_mzi[i_min]
-                        if (length(y_min)== 1) {
+                        i_txt <- localMaxima(y_mzi)
+                        x_LM <- x_mzi[i_txt]
+                        y_LM <- y_mzi[i_txt]
+                        y_min <- 0.25*max(y_mzi)
+                        i_min <- which(y_LM>y_min)
+                        x_txt <- x_LM[i_min]
+                        y_txt <- y_LM[i_min]
+                        if (length(y_mzi)<20){
                                 centroid <- "yes"
                                 x_txt <- x_mzi
                                 y_txt <- y_mzi
-                        } else {i_txt <- localMaxima(y_min) 
-                                x_txt <- X_min[i_txt]
-                                y_txt <- y_min[i_txt]}
+                        }
                         #IF an FLR trace exists do the following:
                         if (length(g_lci) > 1) { #If an FLR trace exists, do the following
                                 
