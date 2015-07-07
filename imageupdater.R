@@ -22,7 +22,8 @@ localMaxima <- function(x) {
         y
 }
 
-custom.labels <- function (og_x, og_y, og_labels = NULL, x_offsets = NA, ofs_amt=15) 
+custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
+                           linecol = par("fg"), srt = 0, ...) 
 {
         
         
@@ -57,42 +58,105 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, x_offsets = NA, ofs_amt
         if (ny == 1) {
                 text(og_x, og_y, og_labels, pos=3)
         } else {
-                
+                #Determine which points to label, labels largest 10.
                 limit <- limit_finder(og_y)
                 min <- limit*max(og_y)
                 y_min <- which(og_y>min)
                 og_x <- og_x[y_min]
                 og_y <- og_y[y_min]
                 og_labels <- og_labels[y_min]
-                ny <- length(og_y)
-                divide <- rounder(ny/2)
                 
-                if (is.na(x_offsets)) {
-                        x_offset <- diff(par("usr")[1:2])/ofs_amt
-                        x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
+                #create a label table to facilitate "smart" labeling.
+                group <- vector(mode="numeric", length=length(og_x))
+                near_left <- vector(mode="logical", length=length(og_x))
+                near_right <- vector(mode="logical", length=length(og_x))
+                new_x <- vector(mode="numeric", length=length(og_x))
+                new_y <- vector(mode="numeric", length=length(og_x))
+                pos <- vector(mode="numeric", length=length(og_x))
+                label_table <- data.frame(og_x, og_y, og_labels, group, near_left, near_right, new_x, new_y, pos)
+                
+                plot_boundries <- par("usr")[1:2]
+                
+                diffs <- diff(og_x)
+                grp_borders <- which(diffs>200)
+                if (length(grp_borders)==0){
+                        label_table$group <- NA
+                } else {
+                        for (i in 1:length(grp_borders)){
+                                label_table[grp_borders[i], "group"] <- i
+                        }
                 }
                 
-                new_x <- og_x + x_offsets
                 
-                x_left_pts <- new_x[1:divide]
-                left_labels <- og_labels[1:divide]
+                label_table[which(label_table$group==0),"group"] <- NA
+                label_table$group <- na.locf(label_table$group, na.rm=FALSE, fromLast = TRUE)
                 
-                x_right_pts <- new_x[(divide+1):length(new_x)]
-                right_labels <- og_labels[(divide+1):length(new_x)]
+                label_table[is.na(label_table$group), "group"] <- (length(grp_borders)+1)
+                
+                for (i in unique(label_table$group)){
+                        group <- i
+                        smallest <- min(label_table$og_x[which(label_table$group==group)])
+                        largest <- max(label_table$og_x[which(label_table$group==group)])
+                        if (smallest-plot_boundries[1] <= 410){
+                                label_table$near_left[which(label_table$group==group)] <- TRUE
+                        }
+                        if (plot_boundries[2]-largest <= 410){
+                                label_table$near_right[which(label_table$group==group)] <- TRUE
+                        }
+                }
                 
                 
                 
-                y_left_pts <- og_y[1:divide]
-                y_right_pts <- og_y[(divide+1):length(og_y)]
+                for (i in unique(label_table$group)){
+                        group <- i
+                        tempdata <- label_table[which(label_table$group==group),]
+                        
+                        ny <- nrow(tempdata)
+                        if (tempdata$near_left[1]) {
+                                x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                x_offsets <- rep(x_offset, ny)[1:ny]
+                                new_x <- tempdata$og_x + x_offsets
+                                new_y <- posfinder(tempdata$og_y)
+                                tempdata$pos <- 4
+                        }
+                        if (tempdata$near_right[1]){
+                                x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                x_offsets <- rep(-x_offset, ny)[1:ny]
+                                new_x <- tempdata$og_x + x_offsets
+                                new_y <- posfinder(tempdata$og_y)
+                                tempdata$pos <- 2
+                        }
+                        if (!exists("x_offsets")){
+                                if(nrow(tempdata)==1){
+                                        tempdata$pos <- 3
+                                        new_x <- tempdata$og_x
+                                        new_y <- tempdata$og_y
+                                        x_offsets <- NULL
+                                } else {
+                                        divide <- rounder(ny/2)
+                                        x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                        x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
+                                        new_x <- tempdata$og_x + x_offsets
+                                        
+                                        y_left_pts <- tempdata$og_y[1:divide]
+                                        tempdata$pos[1:divide] <- rep(2, length(y_left_pts))
+                                        y_right_pts <- tempdata$og_y[(divide+1):length(tempdata$og_y)]
+                                        tempdata$pos[(divide+1):length(tempdata$og_y)] <- rep(4, length(y_right_pts))
+                                        new_y <- c(posfinder(y_left_pts), posfinder(y_right_pts))
+                                }
+                        }
+                        label_table$new_x[which(label_table$group==group)] <- new_x
+                        label_table$new_y[which(label_table$group==group)] <- new_y
+                        label_table$pos[which(label_table$group==group)] <- tempdata$pos
+                        rm(x_offsets)
+                }
                 
-                y_left_pts <- posfinder(y_left_pts)
-                y_right_pts <- posfinder(y_right_pts)
+                for (i in 1:nrow(label_table)) {
+                        label <- label_table[i,]
+                        segments(label$new_x, label$new_y, label$og_x, label$og_y)
+                        text(label$new_x, label$new_y, label$og_label, srt=srt, pos=label$pos)
+                }
                 
-                new_y <- c(y_left_pts, y_right_pts)
-                
-                segments(new_x, new_y, og_x, og_y)
-                text(x_left_pts, y_left_pts, left_labels, pos=2)
-                text(x_right_pts, y_right_pts, right_labels, pos=4)
         }
         
 }
