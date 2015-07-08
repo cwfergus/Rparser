@@ -282,7 +282,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 data
         }
         
-        limit_finder <- function(og_y) {x <- seq(0, 1, .05)
+        limit_finder <- function(og_y) {x <- seq(0, 1, .02)
                                         
                                         for (i in 1:length(x)) {
                                                 threshold <- x[i]

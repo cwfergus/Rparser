@@ -1,5 +1,5 @@
 
-og_x <- x_txt; og_y <- y_txt; og_labels <- x_txt; x_offsets <- NA; ofs_amt <- 15; linecol = par("fg"); srt <- 0
+og_x <- x_txt; og_y <- y_txt; og_labels <- x_txt;  ofs_amt <- 15; linecol = par("fg"); srt <- 0
 x <- x_mzi; y <- y_mzi; x_txt <- x_txt; y_txt <- y_txt; l_txt <- x_txt; labels <- mzlabs; fb <- dfb; gr_t <- "mz" ; l_color <- "red"; so <- SO[i]
 
 
@@ -38,7 +38,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 data
         }
         
-        limit_finder <- function(og_y) {x <- seq(0, 1, .05)
+        limit_finder <- function(og_y) {x <- seq(0, 1, .02)
                                         
                                         for (i in 1:length(x)) {
                                                 threshold <- x[i]
