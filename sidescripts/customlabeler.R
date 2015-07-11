@@ -11,7 +11,9 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
         rounder <- function(x) {round(x+10^-9)}
         
         posfinder <- function(data) {
-                tens <- seq(0, 100, 10)
+                l_boxY <- ceiling(l_w)+(l_w/10)
+                
+                tens <- seq(0, 100, l_boxY)
                 name_list <- vector("character")
                 for (i in unique(data$y_group)){
                         name <- paste("tens", i, sep="_")
@@ -75,10 +77,17 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 label_table <- data.frame(og_x, og_y, og_labels, x_group, y_group, near_left, near_right, new_x, new_y, pos)
                 
                 plot_boundries <- par("usr")[1:2]
+                x_offset <- diff(par("usr")[1:2])/ofs_amt
+                
+                l_l<- max(strwidth(og_labels))
+                l_w <- max(strheight(og_labels))
+                
+                margin_s <- x_offset+l_l + 5
+                
                 
                 #group values by X value
                 diffs <- diff(og_x)
-                grp_borders <- which(diffs>200)
+                grp_borders <- which(diffs>(l_l/2))
                 
                 if (length(grp_borders)==0){
                         label_table$x_group <- NA
@@ -99,10 +108,10 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         x_group <- i
                         smallest <- min(label_table$og_x[which(label_table$x_group==x_group)])
                         largest <- max(label_table$og_x[which(label_table$x_group==x_group)])
-                        if (smallest-plot_boundries[1] <= 410){
+                        if (smallest-plot_boundries[1] <= margin_s){
                                 label_table$near_left[which(label_table$x_group==x_group)] <- TRUE
                         }
-                        if (plot_boundries[2]-largest <= 410){
+                        if (plot_boundries[2]-largest <= margin_s){
                                 label_table$near_right[which(label_table$x_group==x_group)] <- TRUE
                         }
                 }
@@ -115,14 +124,14 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         
                         ny <- nrow(tempdata)
                         if (tempdata$near_left[1]) {
-                                x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                
                                 x_offsets <- rep(x_offset, ny)[1:ny]
                                 new_x <- tempdata$og_x + x_offsets
                                 #new_y <- posfinder(tempdata$og_y)
                                 tempdata$pos <- 4
                         }
                         if (tempdata$near_right[1]){
-                                x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                
                                 x_offsets <- rep(-x_offset, ny)[1:ny]
                                 new_x <- tempdata$og_x + x_offsets
                                 #new_y <- posfinder(tempdata$og_y)
@@ -136,7 +145,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                                         x_offsets <- NULL
                                 } else {
                                         divide <- rounder(ny/2)
-                                        x_offset <- diff(par("usr")[1:2])/ofs_amt
+                                        
                                         x_offsets <- rep(c(rep(-x_offset, divide), rep(x_offset, divide)), ny/2 + 1)[1:ny]
                                         new_x <- tempdata$og_x + x_offsets
                                         
@@ -155,7 +164,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 #Determine Y groups by new X value locations
                 diffs <- diff(label_table$new_x)
-                grp_borders <- which(diffs>200)
+                grp_borders <- which(diffs>margin_s)
                 
                 if (length(grp_borders)==0){
                         label_table$y_group <- NA
