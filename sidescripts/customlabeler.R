@@ -11,7 +11,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
         rounder <- function(x) {round(x+10^-9)}
         
         posfinder <- function(data) {
-                l_boxY <- ceiling(l_w)+(l_w/10)
+                l_boxY <- ceiling(l_w)+(l_w/8)
                 
                 tens <- seq(0, 100, l_boxY)
                 name_list <- vector("character")
@@ -20,7 +20,15 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         assign(name, tens)
                         name_list <- append(name_list, name)
                 }
-                data<-arrange(data, desc(og_y))
+                for ( i in 1:nrow(data)){
+                        if (data$pos[i]==3){
+                                data$order[i] <- 1
+                        } else {
+                                data$order[i] <- 2
+                        }
+                }
+                
+                data<-arrange(data, order, desc(og_y))
                 for (i in 1:nrow(data)){
                         group <- data$y_group[i]
                         ten_grp_name <- paste("tens", group, sep="_")
@@ -29,7 +37,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         temp_pos <- data$pos[i]
                         if (temp_pos==3){
                                 data$new_y[i] <- value
-                                y <- temp_tens[which.min(abs(temp_tens-value))]
+                                y <- temp_tens[which.min(abs(temp_tens-(value+3)))]
                                 temp_tens <- temp_tens[which(temp_tens!=y)]
                         } else {
                                 data$new_y[i]<- temp_tens[which.min(abs(temp_tens-value))]
@@ -74,7 +82,8 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 new_x <- vector(mode="numeric", length=length(og_x))
                 new_y <- vector(mode="numeric", length=length(og_x))
                 pos <- vector(mode="numeric", length=length(og_x))
-                label_table <- data.frame(og_x, og_y, og_labels, x_group, y_group, near_left, near_right, new_x, new_y, pos)
+                order <- vector(mode="numeric", length=length(og_x))
+                label_table <- data.frame(og_x, og_y, og_labels, x_group, y_group, near_left, near_right, new_x, new_y, pos, order)
                 
                 plot_boundries <- par("usr")[1:2]
                 x_offset <- diff(par("usr")[1:2])/ofs_amt
@@ -164,7 +173,10 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 #Determine Y groups by new X value locations
                 diffs <- diff(label_table$new_x)
-                grp_borders <- which(diffs>margin_s)
+                grp_borders <- which(diffs>(2*margin_s))
+                
+                #Need to determine this much better. Need Pos to take a roll (see 1000719168, i=3)
+        
                 
                 if (length(grp_borders)==0){
                         label_table$y_group <- NA

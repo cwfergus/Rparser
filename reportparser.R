@@ -255,7 +255,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
         rounder <- function(x) {round(x+10^-9)}
         
         posfinder <- function(data) {
-                l_boxY <- ceiling(l_w)+(l_w/10)
+                l_boxY <- ceiling(l_w)+(l_w/8)
                 
                 tens <- seq(0, 100, l_boxY)
                 name_list <- vector("character")
@@ -264,7 +264,15 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         assign(name, tens)
                         name_list <- append(name_list, name)
                 }
-                data<-arrange(data, desc(og_y))
+                for ( i in 1:nrow(data)){
+                        if (data$pos[i]==3){
+                                data$order[i] <- 1
+                        } else {
+                                data$order[i] <- 2
+                        }
+                }
+                
+                data<-arrange(data, order, desc(og_y))
                 for (i in 1:nrow(data)){
                         group <- data$y_group[i]
                         ten_grp_name <- paste("tens", group, sep="_")
@@ -273,7 +281,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         temp_pos <- data$pos[i]
                         if (temp_pos==3){
                                 data$new_y[i] <- value
-                                y <- temp_tens[which.min(abs(temp_tens-value))]
+                                y <- temp_tens[which.min(abs(temp_tens-(value+4)))]
                                 temp_tens <- temp_tens[which(temp_tens!=y)]
                         } else {
                                 data$new_y[i]<- temp_tens[which.min(abs(temp_tens-value))]
@@ -318,7 +326,8 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 new_x <- vector(mode="numeric", length=length(og_x))
                 new_y <- vector(mode="numeric", length=length(og_x))
                 pos <- vector(mode="numeric", length=length(og_x))
-                label_table <- data.frame(og_x, og_y, og_labels, x_group, y_group, near_left, near_right, new_x, new_y, pos)
+                order <- vector(mode="numeric", length=length(og_x))
+                label_table <- data.frame(og_x, og_y, og_labels, x_group, y_group, near_left, near_right, new_x, new_y, pos, order)
                 
                 plot_boundries <- par("usr")[1:2]
                 x_offset <- diff(par("usr")[1:2])/ofs_amt
@@ -408,7 +417,10 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 #Determine Y groups by new X value locations
                 diffs <- diff(label_table$new_x)
-                grp_borders <- which(diffs>margin_s)
+                grp_borders <- which(diffs>(2*margin_s))
+                
+                #Need to determine this much better. Need Pos to take a roll (see 1000719168, i=3)
+                
                 
                 if (length(grp_borders)==0){
                         label_table$y_group <- NA
@@ -477,44 +489,8 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         }
         
         dev.off()
-        
-        
-        path <- paste("//DATA4/Mass Spec DataRrepository/imgs", so, sep="/")
-        if (!file.exists(path)) {
-                dir.create(path)
-        }
-        fn <- paste(path, "/", fb,"_",gr_t,".png",sep="")                 # filename
-        png(filename=fn, width=680, height=440)	# Open a device: bmp & pdf are other options here
-        if (pt_b) {
-                ylim <- c(0,105)
-                } else {
-                        ylim <- range(y)
-                        ylim[2] <- ylim[2]*1.05
-                }
-        plot(x, y, 
-             main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
-             col.lab="blue", col.axis="blue", ylim = ylim
-        )
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
-        if (pt_b) {
-                
-                custom.labels(x_txt, y_txt, l_txt, ofs_amt=25)
-                text(min(x),max(ylim), labels[3], pos=4, offset=-1)
-                mtext(paste("SO:", so), side=3, adj=0, line=2)
-                mtext(labels[4], side=3, line=0.7, adj=1, cex=0.8)
-                mtext(labels[5], side=3, line=0, adj=1, cex=0.8)
-        }
-        if(pt_c) {
-                text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
-                mtext(paste("SO:", so), side=3, adj=0, line=2)
-                mtext (labels[9], side=3, adj=0, cex=0.8)
-                mtext(labels[3], side=3, line=0.7, adj=1, cex=0.8)
-                mtext(labels[4], side=3, line=0, adj=1, cex=0.8)
-        }
-        
-        dev.off()
+       
         # Close the image device that was opened above; the actions in the meantime have been recorded
-        return(fn)
 }
 
 peak_table <- function(df) {
