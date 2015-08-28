@@ -4,4 +4,4 @@
 *.rpt
 *.txt
 readirregular.R
-imgs
+parsed_at_*

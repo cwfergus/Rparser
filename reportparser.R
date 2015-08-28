@@ -103,6 +103,19 @@ data$Value[grep("^SampleID$", data$Type)] -> ProdNum
 data$Type[grep("Formula", data$Type)+1] -> ExpectMass
 data$Value[grep("SampleDescription", data$Type)] -> SO
 data$Value[(grep("JobCode", data$Type))]-> ESBarCode
+data$Type[grep("Injection Volume", data$Type)] -> InjVolume
+str_extract(InjVolume, "[[:digit:]]+[[:punct:]][[:digit:]]+") -> InjVolume
+
+data$Value[grep("^Method$", data$Type)] -> method_raw
+gsub("([\\])", "\\/", method_raw) -> method_raw
+for (i in 1:length(method_raw)) {
+        if (grepl("MassLynx", method_raw[i])) {
+                str_extract(method_raw[i], "[/][[:alnum:]]{+}[.]") -> method_raw[i]
+                str_sub(method_raw[i], 2, -2) -> method_raw[i]
+        }
+}
+
+method_raw-> Method
 #Takes f2, which is the location of the sample like 16:4,F, and extracts the
 #different parts of this.
 str_extract(f2, "[[:digit:]]+") -> PlateLoc
@@ -211,27 +224,38 @@ Area_null <- vector(mode = "character", length = length(Area))
 #Make a vector of column names just to make it easy.
 columnnames <- c("Well", "ProdNum", "Date", "Time", "UserName", "Instrument", 
                  "Results", "PlateLoc", "Row", "Col", "SSID", "ExpectMass", 
-                 "TestType", "SO", "ESBarCode", "Area")
+                 "TestType", "SO", "ESBarCode", "Area", "InjVolume", "InstrMethod")
 #Bind together the different vectors into a data frame.
 msESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument, 
                            Results, PlateLoc, Row, Col, SSID, ExpectMass, 
-                           TestType_MS, SO, ESBarCode, Area_null))
+                           TestType_MS, SO, ESBarCode, Area_null, InjVolume, Method))
 
 areaESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument,
                              Results_null, PlateLoc, Row, Col, SSID,
-                             ExpectMass_null, TestType_HPLC, SO, ESBarCode, Area))
+                             ExpectMass_null, TestType_HPLC, SO, ESBarCode, Area, InjVolume, Method))
+
 
 #Append the new column names, removing the Area_null name to Area
 colnames(msESMS) <- columnnames
 colnames(areaESMS) <- columnnames
 #puts the two TestType data frames together
 rbind(msESMS, areaESMS) -> likeESMS
+
+folder_name_raw <- strptime(Sys.time(), format = "%F %T")
+
+folder_name <- paste("parsed_at", format(folder_name_raw, format="%H%M %p"), sep="_")
+
+dir.create(folder_name)
+
+file_name <- (paste(folder_name, "dataforimport.txt", sep="/"))
+
 #Writes out the now ESMS replica data to the outputnume
-write.table(likeESMS, "dataforimport.txt", sep = "\t", col.names=FALSE, 
+write.table(likeESMS, file_name, sep = "\t", col.names=FALSE, 
             quote=FALSE, row.names=FALSE, na="")
 # print out the list of barcodes parsed and imported
 print(fn_list)
-print("Don't forget to now import into Filemaker")
+print("You may now import the QC data into filemaker")
+print("QC Traces are now being generated:")
 
 #####Graphing functions####
 localMaxima <- function(x) {
@@ -280,8 +304,10 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         value <- data$og_y[i]
                         temp_pos <- data$pos[i]
                         if (temp_pos==3){
-                                data$new_y[i] <- value
-                                y <- temp_tens[which.min(abs(temp_tens-(value+4)))]
+                                data$new_y[i] <- value-2
+                                y <- temp_tens[which.min(abs(temp_tens-(value+3)))]
+                                temp_tens <- temp_tens[which(temp_tens!=y)]
+                                y <- temp_tens[which.min(abs(temp_tens-(value-3)))]
                                 temp_tens <- temp_tens[which(temp_tens!=y)]
                         } else {
                                 data$new_y[i]<- temp_tens[which.min(abs(temp_tens-value))]
@@ -417,7 +443,7 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 #Determine Y groups by new X value locations
                 diffs <- diff(label_table$new_x)
-                grp_borders <- which(diffs>(2*margin_s))
+                grp_borders <- which(diffs>(margin_s*2))
                 
                 #Need to determine this much better. Need Pos to take a roll (see 1000719168, i=3)
                 
@@ -441,13 +467,16 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 for (i in 1:nrow(label_table)) {
                         label <- label_table[i,]
-                        segments(label$new_x, label$new_y, label$og_x, label$og_y)
+                        if(label$pos != 3) {
+                                segments(label$new_x, label$new_y, label$og_x, label$og_y)
+                        }
                         text(label$new_x, label$new_y, label$og_label, srt=srt, pos=label$pos)
                 }
                 
         }
         
 }
+
 
 
 coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="black", so)
@@ -472,7 +501,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
         if (pt_b) {
                 
-                custom.labels(x_txt, y_txt, l_txt, ofs_amt=35)
+                custom.labels(x_txt, y_txt, l_txt, ofs_amt=25)
                 text(min(x),max(ylim), labels[3], pos=4, offset=-1)
                 mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext(labels[4], side=3, line=1, adj=1)
@@ -486,6 +515,39 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 mtext(paste("SO:", so), side=3, adj=0, line=2)
                 mtext(labels[3], side=3, line=1, adj=1)
                 mtext(labels[4], side=3, line=0, adj=1)
+        }
+        
+        dev.off()
+        
+        paste(folder_name, "/", sep="") -> path
+        fn <- paste(path, fb, "_", gr_t, ".wmf", sep="")
+        
+        win.metafile(filename=fn, width=10, height=5)        # Open a device: bmp & pdf are other options here
+        if (pt_b) {
+                ylim <- c(0,105)
+        } else {
+                ylim <- range(y)
+                ylim[2] <- ylim[2]*1.05
+        }
+        plot(x, y, 
+             main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
+             col.lab="blue", col.axis="blue", ylim = ylim
+        )
+        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+        if (pt_b) {
+                
+                custom.labels(x_txt, y_txt, l_txt, ofs_amt=25)
+                text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+                
+                mtext(labels[4], side=3, line=0.7, adj=1, cex=0.8)
+                mtext(labels[5], side=3, line=0, adj=1, cex=0.8)
+        }
+        if(pt_c) {
+                text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
+                
+                mtext (labels[9], side=3, adj=0, cex=0.8)
+                mtext(labels[3], side=3, line=0.7, adj=1, cex=0.8)
+                mtext(labels[4], side=3, line=0, adj=1, cex=0.8)
         }
         
         dev.off()
@@ -639,14 +701,14 @@ for (i in 1:imax)
                 mzl_3 <- paste("Time", ptime, MaxEnt, grep("Combine", combine, value=TRUE))  # set peak info to label 3
                 # line type: h=histogram-like spikes for mass, o=connect-dots for hplc
                 if (exists("centroid")){
-                        mzlabs  <- c(paste("LGC Biosearch Technologies", "\n", "MS:", dfb, "\n"),"",mzl_1,mzl_2,mzl_3,"m/z","%","h")
+                        mzlabs  <- c(paste("MS:", dfb),"",mzl_1,mzl_2,mzl_3,"m/z","%","h")
                         i_y_txt <- which(y_txt>0.25*max(y_txt))
                         m_y_txt <- y_txt[i_y_txt]
                         x_txt <- x_txt[i_y_txt]
                         y_txt <- m_y_txt
                         rm(centroid)
                 } else {
-                        mzlabs  <- c(paste("LGC Biosearch Technologies", "\n", "MS:", dfb, "\n"),"",mzl_1,mzl_2,mzl_3,"m/z","%","l")
+                        mzlabs  <- c(paste("MS:", dfb),"",mzl_1,mzl_2,mzl_3,"m/z","%","l")
                 }
                 
                 
@@ -655,7 +717,7 @@ for (i in 1:imax)
                 buf_col <- t_hdr[grep("^Conditions", t_hdr[,1]),2]
                 lcl_2 <- buf_col  # hplc conditions
                 lcl_3 <- ""  # hplc conditions
-                lclabs  <- c(paste("LGC Biosearch Technologies", "\n", "UPLC:",dfb, "\n"),"",lcl_1,lcl_2,lcl_3,"Time (min)","AU","o", lc_dis_range)
+                lclabs  <- c(paste("UPLC:",dfb),"",lcl_1,lcl_2,lcl_3,"Time (min)","AU","o", lc_dis_range)
                 
                 
                 fn_mz <- coa_plot(x_mzi,y_mzi,x_txt,y_txt,x_txt,TRUE,FALSE,dfb,"mz",mzlabs, l_col="red", so=SO[i])        # mass spec
@@ -676,6 +738,7 @@ for (i in 1:imax)
         }
 }
 
+print("You may now import the QC traces into filemaker.")
 
 rm(list=ls())
 
