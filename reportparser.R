@@ -107,15 +107,8 @@ data$Type[grep("Injection Volume", data$Type)] -> InjVolume
 str_extract(InjVolume, "[[:digit:]]+[[:punct:]][[:digit:]]+") -> InjVolume
 
 data$Value[grep("^Method$", data$Type)] -> method_raw
-gsub("([\\])", "\\/", method_raw) -> method_raw
-for (i in 1:length(method_raw)) {
-        if (grepl("MassLynx", method_raw[i])) {
-                str_extract(method_raw[i], "[/][[:alnum:]]{+}[.]") -> method_raw[i]
-                str_sub(method_raw[i], 2, -2) -> method_raw[i]
-        }
-}
+basename(method_raw) -> Method
 
-method_raw-> Method
 #Takes f2, which is the location of the sample like 16:4,F, and extracts the
 #different parts of this.
 str_extract(f2, "[[:digit:]]+") -> PlateLoc
