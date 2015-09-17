@@ -308,6 +308,8 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                         }
                         assign(ten_grp_name, temp_tens)
                 }
+
+                
                 data
         }
         
@@ -436,8 +438,22 @@ custom.labels <- function (og_x, og_y, og_labels = NULL, ofs_amt=15,
                 
                 #Determine Y groups by new X value locations
                 diffs <- diff(label_table$new_x)
-                grp_borders <- which(diffs>(margin_s*2))
+                difftable <- cbind(c(0,diffs), label_table$pos)
+                colnames(difftable) <- c("diff", "pos")
                 
+                
+                for (i in 1:(nrow(difftable)-1)){
+                        diff <- difftable[i+1, 1]
+                        posA <- difftable[i, 2]
+                        posB <- difftable[i+1, 2]
+                        if (posA == posB){
+                                if (diff > l_l + 10) {
+                                        diffs[i] <- margin_s*3
+                                }
+                        }
+                }
+                
+                grp_borders <- which(diffs>(margin_s*2))
                 #Need to determine this much better. Need Pos to take a roll (see 1000719168, i=3)
                 
                 
