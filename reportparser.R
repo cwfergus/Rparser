@@ -96,6 +96,9 @@ while (filename != "n") {
 # The Parser uses grep commands to look for certain words/Reg Exp. Then it takes a value
 # in either the row over or somewhere else related to the word.
 
+
+
+
 data$Value[grep("Well", data$Type)] -> f2 
 data$Value[grep("UserName", data$Type)] -> UserName
 data$Value[grep("^Instrument$", data$Type)] -> Instrument
@@ -203,6 +206,7 @@ for (ss in 1:length(samplesplit)) {
 #Generates a Test Type vector, which is just the TestType repeated over and over
 rep_len(x = "MS", length.out = length(f2)) -> TestType_MS
 rep_len(x = "HPLC", length.out = length(f2)) -> TestType_HPLC
+
 
 
 
@@ -753,3 +757,4 @@ rm(list=ls())
 
 #### testing####
 #change posfinder to look at entire table, but make a tens thing relative to each group using paste(tens, i), then you can reorder entire table and loop through for each group finding new y locations based on selected vectors.
+
