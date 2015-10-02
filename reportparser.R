@@ -150,17 +150,17 @@ for (ss in 1:length(samplesplit)) {
                 if (nrow(as.data.frame(functionsplit[f])) <= 20) {
                         next #If the function contains less that 20 rows, ignore it
                 }
-                if (any(grepl("% BPI", functionsplit[f]))){ #Is this MS data?
+                if (any(grepl("% BPI", as.data.frame(functionsplit[f])[2]))){ #Is this MS data?
                         ms_data <- as.data.frame(functionsplit[f]) #put in data frame
                         colnames(ms_data) <- c("Type", "Value")
                         next
                 }
-                if (any(grepl("DAD", functionsplit[f]))){ #Is it LC data?
+                if (any(grepl("DAD", as.data.frame(functionsplit[f])[2]))){ #Is it LC data?
                         dad_data <- as.data.frame(functionsplit[f])
                         colnames(dad_data) <- c("Type", "Value")
                         next
                 }
-                if (any(grepl("FLR", functionsplit[f]))){ #Is it FLR data?
+                if (any(grepl("FLR", as.data.frame(functionsplit[f])[2]))){ #Is it FLR data?
                         flr_data2 <- as.data.frame(functionsplit[f])
                         colnames(flr_data2) <- c("Type", "Value")
                         next
@@ -493,41 +493,41 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
         # x,y are vectors; pt_b TRUE/FALSe to show point txt; pt_min: min value to show pt txt
         # fb = file base name; gr_t = mz or lc plot type; labels includes titles, axis labels, and other specs
         
-        "//Data/it/DBMS/Integrations/ERPDev/imgs/lcms/" -> md
-        dev_fn <- paste(md, fb, "_", gr_t, ".png", sep="")
-        
-        png(filename=dev_fn, width=1400, height=500) # Open a device: bmp & pdf are other options here
-        if (pt_b) {ylim <- c(0,105)} 
-        else {
-                ylim <- range(y)
-                ylim[2] <- ylim[2]*1.05
-        }
-        
-        plot(x, y, 
-             main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
-             col.lab="blue", col.axis="blue", ylim = ylim
-        )
-        lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
-        if (pt_b) {
-                
-                custom.labels(x_txt, y_txt, l_txt, ofs_amt=25)
-                text(min(x),max(ylim), labels[3], pos=4, offset=-1)
-                mtext(paste("SO:", so), side=3, adj=0, line=2)
-                mtext(labels[4], side=3, line=1, adj=1)
-                mtext(labels[5], side=3, line=0, adj=1)
-        }
-        
-        if(pt_c) {
-                #textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
-                text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
-                mtext (labels[9], side=3, adj=0)
-                mtext(paste("SO:", so), side=3, adj=0, line=2)
-                mtext(labels[3], side=3, line=1, adj=1)
-                mtext(labels[4], side=3, line=0, adj=1)
-        }
-        
-        dev.off()
-        
+#         "//Data/it/DBMS/Integrations/ERPDev/imgs/lcms/" -> md
+#         dev_fn <- paste(md, fb, "_", gr_t, ".png", sep="")
+#         
+#         png(filename=dev_fn, width=1400, height=500) # Open a device: bmp & pdf are other options here
+#         if (pt_b) {ylim <- c(0,105)} 
+#         else {
+#                 ylim <- range(y)
+#                 ylim[2] <- ylim[2]*1.05
+#         }
+#         
+#         plot(x, y, 
+#              main=labels[1], sub=labels[2],xlab=labels[6], ylab=labels[7], type="n", axes=TRUE,
+#              col.lab="blue", col.axis="blue", ylim = ylim
+#         )
+#         lines(x,y, lty=1, type=labels[8], pch='', col=l_color)
+#         if (pt_b) {
+#                 
+#                 custom.labels(x_txt, y_txt, l_txt, ofs_amt=25)
+#                 text(min(x),max(ylim), labels[3], pos=4, offset=-1)
+#                 mtext(paste("SO:", so), side=3, adj=0, line=2)
+#                 mtext(labels[4], side=3, line=1, adj=1)
+#                 mtext(labels[5], side=3, line=0, adj=1)
+#         }
+#         
+#         if(pt_c) {
+#                 #textxy(x_txt, 0.96*y_txt, l_txt, cex=1, offset=-0.8)
+#                 text(min(x), max(ylim), labels=l_txt, pos=4, offset=-1)
+#                 mtext (labels[9], side=3, adj=0)
+#                 mtext(paste("SO:", so), side=3, adj=0, line=2)
+#                 mtext(labels[3], side=3, line=1, adj=1)
+#                 mtext(labels[4], side=3, line=0, adj=1)
+#         }
+#         
+#         dev.off()
+#         
         paste(folder_name, "/", sep="") -> path
         fn <- paste(path, fb, "_", gr_t, ".wmf", sep="")
         
@@ -558,7 +558,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
                 mtext(labels[3], side=3, line=0.7, adj=1, cex=0.8)
                 mtext(labels[4], side=3, line=0, adj=1, cex=0.8)
         }
-        
+
         dev.off()
        
         # Close the image device that was opened above; the actions in the meantime have been recorded
