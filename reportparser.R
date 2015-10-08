@@ -219,9 +219,9 @@ Results_null <- vector(mode = "character", length = length(Results))
 Area_null <- vector(mode = "character", length = length(Area))
 
 #Make a vector of column names just to make it easy.
-columnnames <- c("Well", "ProdNum", "Date", "Time", "UserName", "Instrument", 
-                 "Results", "PlateLoc", "Row", "Col", "SSID", "ExpectMass", 
-                 "TestType", "SO", "ESBarCode", "Area", "InjVolume", "InstrMethod")
+columnnames <- c("Well", "ProdNum", "TestDate", "TestTime", "TesterName", "Instr", 
+                 "TestResults", "DeckLoc", "OrigRow", "OrigCol", "SSID", "TestGoal", 
+                 "TestType", "SO", "ESScnBC", "Area", "InjVolume", "InstrMethod")
 #Bind together the different vectors into a data frame.
 msESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument, 
                            Results, PlateLoc, Row, Col, SSID, ExpectMass, 
