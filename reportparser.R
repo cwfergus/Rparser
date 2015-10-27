@@ -19,7 +19,33 @@ if (!require(zoo)){
         library(zoo)
 } else library(zoo)
 
+#Used to generate the random folder name for storing data.
+makeRandomString <- function(n=1, length=12) {
+        randomString <- c(1:n)
+        seed <- format(Sys.time(), "%H%M%S")
+        set.seed(seed)
+        for (i in 1:n){
+                randomString[i] <- paste(c(sample(c(letters, LETTERS),1), 
+                                           sample(c(0:9, letters, LETTERS), size = (length-1), replace=TRUE)),
+                                         collapse="", sep="")
+        }
+        return(randomString)
+}
 
+#Generate the random folder name and specify the folder location
+#Currently set to the current working directory.
+data_directory_path <- "//DATA4/Mass Spec DataRrepository/Parsed_Data"
+month_folder_name <- format(Sys.time(), "%m-%Y")
+date_folder_name <- format(Sys.time(), "%m-%d-%Y")
+folder_name <- makeRandomString()
+image_folder_name <- "imgs"
+Export_Month_Path <- paste(data_directory_path, month_folder_name, sep="/")
+Export_Date_Path <- paste(data_directory_path, month_folder_name, date_folder_name, sep = "/")
+Export_Data_Path <- paste(data_directory_path, month_folder_name, date_folder_name, folder_name, sep="/")
+Export_Image_Path <- paste(Export_Data_Path, image_folder_name, sep="/")
+
+into_filemaker <- paste(month_folder_name, date_folder_name, folder_name, sep="/")
+writeClipboard(into_filemaker)
 
 # Initialize some vectors and data frames for use later
 data <- data.frame()
@@ -39,10 +65,10 @@ while (filename != "n") {
         filenamerpt <- paste(filename, ".rpt", sep="")
         filenamereprocess <- paste(filename, "_reprocess.rpt", sep="")
         #Set Data Path
-        data_path <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
+        Import_Data_Path <- "//DATA4/Mass Spec DataRrepository/reportfiles/current_report_files/"
         #Paste Data Path to filenames
-        filenamefull <- paste(data_path, filenamerpt, sep="")
-        reprocess_filename <- paste(data_path, filename, "_reprocess.rpt", sep="")
+        filenamefull <- paste(Import_Data_Path, filenamerpt, sep="")
+        reprocess_filename <- paste(Import_Data_Path, filename, "_reprocess.rpt", sep="")
         
         #Check if a reprocess exists and prompt user if they want to parse that instead
         if (file.exists(reprocess_filename) == TRUE) {
@@ -55,7 +81,7 @@ while (filename != "n") {
                 }
         }
         #Check if the user entered n, and end the read in loop
-        breakname <- paste(data_path, "n.rpt", sep="")
+        breakname <- paste(Import_Data_Path, "n.rpt", sep="")
         if (filenamefull == breakname) {
                 break
         }
@@ -141,7 +167,7 @@ samplesplit <- split(data, cumsum(data[,"Type"] == "[SAMPLE]"))
 #Generates empty vectors for the results to go into
 Results <- vector()
 Area <- vector()
-FlrArea <- vector()
+FLRArea <- vector()
 #The following loop finds all the Test data. It looks at each sample individually and
 #generates data frames based on the type of data. Then its searches for the test result
 # If a specific test is missing, or is shorter than 20 lines (also means missing data)
@@ -199,16 +225,18 @@ for (ss in 1:length(samplesplit)) {
                 FoundFLRarea <- 0
                 #Don't bother reporting as most samples won't have FLR data.
         } #Append FLR area of sample to overall FlrArea vector
-        FlrArea <- append(FlrArea, FoundFLRarea)
+        FLRArea <- append(FLRArea, FoundFLRarea)
 }
 
 
 #Generates a Test Type vector, which is just the TestType repeated over and over
 rep_len(x = "MS", length.out = length(f2)) -> TestType_MS
 rep_len(x = "HPLC", length.out = length(f2)) -> TestType_HPLC
+rep_len(x = "FLR", length.out=length(f2)) -> TestType_FLR
 
 
 
+rep_len(x = Export_Data_Path, length.out = length(f2)) -> Export_Data_Path_WL
 
 ##### Output file generation ####
 #Now with all the data generated we have to put it together in the format that FM wants
@@ -217,42 +245,49 @@ rep_len(x = "HPLC", length.out = length(f2)) -> TestType_HPLC
 ExpectMass_null <- vector(mode = "character", length = length(ExpectMass))
 Results_null <- vector(mode = "character", length = length(Results))
 Area_null <- vector(mode = "character", length = length(Area))
+FLRArea_null <- vector(mode = "character", length = length(FLRArea))
 
 #Make a vector of column names just to make it easy.
 columnnames <- c("Well", "ProdNum", "TestDate", "TestTime", "TesterName", "Instr", 
                  "TestResults", "DeckLoc", "OrigRow", "OrigCol", "SSID", "TestGoal", 
-                 "TestType", "SO", "ESScnBC", "Area", "InjVolume", "InstrMethod")
+                 "TestType", "SO", "ESScnBC", "Area", "InjVolume", "InstrMethod", "Data_Path", "FLR_Area")
 #Bind together the different vectors into a data frame.
 msESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument, 
                            Results, PlateLoc, Row, Col, SSID, ExpectMass, 
-                           TestType_MS, SO, ESBarCode, Area_null, InjVolume, Method))
+                           TestType_MS, SO, ESBarCode, Area_null, InjVolume, Method, Export_Data_Path_WL, FLRArea_null))
 
 areaESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument,
                              Results_null, PlateLoc, Row, Col, SSID,
-                             ExpectMass_null, TestType_HPLC, SO, ESBarCode, Area, InjVolume, Method))
+                             ExpectMass_null, TestType_HPLC, SO, ESBarCode, Area, InjVolume, Method, Export_Data_Path_WL, FLRArea_null))
 
+flrESMS <- data.frame(cbind(Well, ProdNum, Date, Time, UserName, Instrument, 
+                                      Results_null, PlateLoc, Row, Col, SSID, ExpectMass_null, 
+                                      TestType_FLR, SO, ESBarCode, Area_null, InjVolume, Method, Export_Data_Path_WL, FLRArea))
 
 #Append the new column names, removing the Area_null name to Area
 colnames(msESMS) <- columnnames
 colnames(areaESMS) <- columnnames
+colnames(flrESMS) <- columnnames
 #puts the two TestType data frames together
-rbind(msESMS, areaESMS) -> likeESMS
+#Only put the FLR into the mix if there is an FLR area.
+if (sum(FLRArea) < 1) {
+	rbind(msESMS, areaESMS) -> likeESMS
+} else {
+	rbind(msESMS, areaESMS, flrESMS) -> likeESMS
+}
 
-folder_name_raw <- strptime(Sys.time(), format = "%F %T")
+dir.create(Export_Month_Path, showWarnings=FALSE)
+dir.create(Export_Date_Path, showWarnings=FALSE)
+dir.create(Export_Data_Path)
+dir.create(Export_Image_Path)
 
-folder_name <- paste("parsed_at", format(folder_name_raw, format="%H%M %p"), sep="_")
-
-dir.create(folder_name)
-
-file_name <- (paste(folder_name, "dataforimport.txt", sep="/"))
+file_name <- (paste(Export_Data_Path, "dataforimport.txt", sep="/"))
 
 #Writes out the now ESMS replica data to the outputnume
-write.table(likeESMS, file_name, sep = "\t", col.names=FALSE, 
+write.table(likeESMS, file_name, sep = "\t", col.names=TRUE, 
             quote=FALSE, row.names=FALSE, na="")
 # print out the list of barcodes parsed and imported
 print(fn_list)
-print("You may now import the QC data into filemaker")
-print("QC Traces are now being generated:")
 
 #####Graphing functions####
 localMaxima <- function(x) {
@@ -532,7 +567,7 @@ coa_plot <- function(x,y,x_txt,y_txt,l_txt,pt_b,pt_c,fb,gr_t,labels,l_color="bla
 #         
 #         dev.off()
 #         
-        paste(folder_name, "/", sep="") -> path
+        paste(Export_Image_Path, "/", sep="") -> path
         fn <- paste(path, fb, "_", gr_t, ".wmf", sep="")
         
         win.metafile(filename=fn, width=10, height=5)        # Open a device: bmp & pdf are other options here
@@ -750,11 +785,15 @@ for (i in 1:imax)
                 
         }
 }
-
-print("You may now import the QC traces into filemaker.")
-
+print("Text and Trace data has been saved to")
+print(folder_name)
+print("Now close R, don't save the workspace and paste the foldername")
+print("It has already been copied into the ClipBoard")
+print(Export_Data_Path)
+writeClipboard(into_filemaker)
 rm(list=ls())
 
 #### testing####
 #change posfinder to look at entire table, but make a tens thing relative to each group using paste(tens, i), then you can reorder entire table and loop through for each group finding new y locations based on selected vectors.
+
 
